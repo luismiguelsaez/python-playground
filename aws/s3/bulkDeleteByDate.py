@@ -9,6 +9,7 @@ parser.add_argument('--prefix', required=True, action='store', help='Object name
 parser.add_argument('--modified-before', required=True, action='store', help='Objects where created before this date ( %Y-%m-%d %H:%M:%S )')
 parser.add_argument('--modified-after', required=True, action='store', help='Objects where created after this date ( %Y-%m-%d %H:%M:%S )')
 parser.add_argument('--output', required=False, action='store', help='Optional file to write the deleted objects')
+parser.add_argument('--stats', required=False, action='store_true', help='Print stats')
 
 args = vars(parser.parse_args())
 
@@ -24,26 +25,32 @@ paginator = s3.get_paginator("list_objects_v2")
 paginator_params = {'Bucket': bucket, 'Prefix': namePrefix}
 pages = paginator.paginate(**paginator_params)
 
-if "output" in args:
-    outputFile = open("demofile2.txt", "a")
+if args["output"] != None:
+    outputFile = open(args["output"], "a")
     outputEnabled = True
 
 dateBefore = datetime.utcnow().strptime(modBefore, '%Y-%m-%d %H:%M:%S')
 dateAfter = datetime.utcnow().strptime(modAfter, '%Y-%m-%d %H:%M:%S')
 
 totalSize = 0
+deletedSize = 0
 deletedFiles = 0
+processedFiles = 0
 keysToDelete = []
 
 for page in pages:
     for object in page["Contents"]:
+        processedFiles += 1
+        totalSize += object["Size"]
         if object["LastModified"] > dateAfter.replace(tzinfo=timezone.utc) and object["LastModified"] < dateBefore.replace(tzinfo=timezone.utc):
-                s3.delete_objects(Bucket=bucket, Key=object["Key"])
+                #s3.delete_objects(Bucket=bucket, Key=object["Key"])
                 if outputEnabled:
-                    outputFile.write("{},{},{}".format(object["Key"],object["LastModified"],object["Size"]))
-                totalSize += object["Size"]
+                    outputFile.write("{},{},{}\n".format(object["Key"],object["LastModified"],object["Size"]))
+                deletedSize += object["Size"]
                 deletedFiles += 1
                 keysToDelete.append({"Key": object["Key"]})
+        if args["stats"] and processedFiles % 10000 == 0:
+            print("Deleted files: {}/{} - Size {}/{}".format(deletedFiles, processedFiles, deletedSize, totalSize))
 
 print("Total size: {} bytes", totalSize)
 #s3.delete_objects(Bucket=bucket, Delete={"Objects": keysToDelete})
