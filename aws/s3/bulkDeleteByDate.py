@@ -1,9 +1,11 @@
+from statistics import mode
 import boto3
 from datetime import datetime, timezone
 import argparse
 import re
 
 parser = argparse.ArgumentParser(description='Remove objects from bucket, based on last modified date')
+parser.add_argument('--mode', required=False, action='store', default="print", help='Mode [delete|rename|print]')
 parser.add_argument('--bucket', required=True, action='store', help='Name of the bucket')
 parser.add_argument('--prefix', required=True, action='store', help='Object name prefix')
 parser.add_argument('--modified-before', required=True, action='store', help='Objects where created before this date ( %Y-%m-%d %H:%M:%S )')
@@ -13,6 +15,7 @@ parser.add_argument('--stats', required=False, action='store_true', help='Print 
 
 args = vars(parser.parse_args())
 
+execMode = args["mode"]
 bucket = args["bucket"]
 namePrefix = args["prefix"]
 modBefore = args["modified_before"]
@@ -43,7 +46,19 @@ for page in pages:
         processedFiles += 1
         totalSize += object["Size"]
         if object["LastModified"] > dateAfter.replace(tzinfo=timezone.utc) and object["LastModified"] < dateBefore.replace(tzinfo=timezone.utc):
-                #s3.delete_objects(Bucket=bucket, Key=object["Key"])
+                if execMode == "delete":
+                    s3.delete_objects(Bucket=bucket, Key=object["Key"])
+                elif execMode == "rename":
+                    print("{} > {}".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
+                    s3.copy_object(
+                        CopySource={'Bucket': bucket, 'Key': object["Key"]},
+                        Bucket=bucket,
+                        Key=object["Key"].replace(namePrefix, namePrefix + "backup/")
+                    )
+                    s3.delete_objects(Bucket=bucket, Key=object["Key"])
+                else:
+                    print("{}".format(object["Key"]))
+
                 if outputEnabled:
                     outputFile.write("{},{},{}\n".format(object["Key"],object["LastModified"],object["Size"]))
                 deletedSize += object["Size"]
