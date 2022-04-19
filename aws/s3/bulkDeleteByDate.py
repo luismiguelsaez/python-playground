@@ -48,6 +48,8 @@ for page in pages:
         if object["LastModified"] > dateAfter.replace(tzinfo=timezone.utc) and object["LastModified"] < dateBefore.replace(tzinfo=timezone.utc):
                 if execMode == "delete":
                     s3.delete_objects(Bucket=bucket, Key=object["Key"])
+                    if outputEnabled:
+                        outputFile.write("{},{},{}\n".format(object["Key"], object["Size"], object["LastModified"]))
                 elif execMode == "rename":
                     print("{} > {}".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
                     s3.copy_object(
@@ -56,11 +58,12 @@ for page in pages:
                         Key=object["Key"].replace(namePrefix, namePrefix + "backup/")
                     )
                     s3.delete_objects(Bucket=bucket, Key=object["Key"])
+
+                    if outputEnabled:
+                        outputFile.write("{}|{}\n".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
                 else:
                     print("{}".format(object["Key"]))
 
-                if outputEnabled:
-                    outputFile.write("{},{},{}\n".format(object["Key"],object["LastModified"],object["Size"]))
                 deletedSize += object["Size"]
                 deletedFiles += 1
                 keysToDelete.append({"Key": object["Key"]})
