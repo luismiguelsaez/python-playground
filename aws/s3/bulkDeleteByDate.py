@@ -57,7 +57,7 @@ for page in pages:
                         Bucket=bucket,
                         Key=object["Key"].replace(namePrefix, namePrefix + "backup/")
                     )
-                    s3.delete_objects(Bucket=bucket, Key=object["Key"])
+                    s3.delete_object(Bucket=bucket, Key=object["Key"])
 
                     if outputEnabled:
                         outputFile.write("{}|{}\n".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
