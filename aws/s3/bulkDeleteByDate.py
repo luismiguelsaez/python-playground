@@ -50,23 +50,29 @@ for page in pages:
                     s3.delete_objects(Bucket=bucket, Key=object["Key"])
                     if outputEnabled:
                         outputFile.write("{},{},{}\n".format(object["Key"], object["Size"], object["LastModified"]))
+                    keysToDelete.append({"Key": object["Key"]})
+                    deletedSize += object["Size"]
+                    deletedFiles += 1
                 elif execMode == "rename":
-                    print("{} > {}".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
+                    #print("{} > {}".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
                     s3.copy_object(
                         CopySource={'Bucket': bucket, 'Key': object["Key"]},
                         Bucket=bucket,
                         Key=object["Key"].replace(namePrefix, namePrefix + "backup/")
                     )
-                    s3.delete_object(Bucket=bucket, Key=object["Key"])
+                    #s3.delete_object(Bucket=bucket, Key=object["Key"])
+                    keysToDelete.append({"Key": object["Key"]})
+                    deletedSize += object["Size"]
+                    deletedFiles += 1
 
                     if outputEnabled:
                         outputFile.write("{}|{}\n".format(object["Key"], object["Key"].replace(namePrefix, namePrefix + "backup/")))
                 else:
                     print("{}".format(object["Key"]))
 
-                deletedSize += object["Size"]
-                deletedFiles += 1
-                keysToDelete.append({"Key": object["Key"]})
+        if len(keysToDelete) == 1000:
+            s3.delete_objects(Bucket=bucket, Delete={"Objects": keysToDelete})
+
         if args["stats"] and processedFiles % 10000 == 0:
             print("Deleted files: {}/{} - Size {}/{}".format(deletedFiles, processedFiles, deletedSize, totalSize))
 
