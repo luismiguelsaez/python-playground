@@ -71,6 +71,7 @@ for page in pages:
                     print("{}".format(object["Key"]))
 
         if len(keysToDelete) == 1000:
+            print("Deleting files from list")
             s3.delete_objects(Bucket=bucket, Delete={"Objects": keysToDelete})
 
         if args["stats"] and processedFiles % 10000 == 0:
