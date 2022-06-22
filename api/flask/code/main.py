@@ -18,6 +18,11 @@ byPathCounter = metrics.counter(
     labels={'path': lambda: request.path}
 )
 
+@api.route("/health",methods=['GET'])
+@byPathCounter
+def health():
+  return jsonify({"healthy":"true"}), 200
+
 @api.route("/",methods=['GET'])
 @byPathCounter
 def root():
