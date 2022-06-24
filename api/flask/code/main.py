@@ -41,7 +41,7 @@ def root():
 
 def randomResponse():
   httpCodes = [200,500]
-  httpResponseCode = random.choices(population=httpCodes,weights=(5,95),k=1)
+  httpResponseCode = random.choices(population=httpCodes,weights=(95,5),k=1)
   if httpResponseCode[0] == 200:
     return {"message": "success"}, httpResponseCode[0]
   elif httpResponseCode[0] == 500:
