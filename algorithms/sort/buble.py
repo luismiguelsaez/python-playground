@@ -3,12 +3,11 @@ def sort_bubble(list: list)->list:
 
   for i in reversed(range(len(list))):
     j = 0
-    while j < i:
+    for j in range(j,i):
       if list[j] > list[j+1]:
         buff = list[j]
         list[j] = list[j+1]
         list[j+1] = buff
-      j += 1
 
   return list
 
