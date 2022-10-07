@@ -1,3 +1,4 @@
+import time
 
 def sort_bubble(list: list)->list:
 
@@ -12,6 +13,10 @@ def sort_bubble(list: list)->list:
 
 if __name__ == "__main__":
 
-  test_list = [7,8,2,3,6,5,1,4]
+  test_list = [7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,
+               7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4,7,8,2,1,10,3,6,5,1,4]
 
+  startTime = time.time()
   print(sort_bubble(test_list))
+  executionTime = (time.time() - startTime)
+  print('Execution time in seconds: ' + str(executionTime))
