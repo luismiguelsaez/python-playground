@@ -31,7 +31,8 @@ def merge_lists(list1: list,list2: list)->list:
 
 if __name__ == "__main__":
 
-    list1 = [0,2,5,7] 
-    list2 = [1,3,4,8] 
+    list1 = [0,2,5,7,9,11,21] 
+    list2 = [1,3,4,8,12,33,24,56] 
 
     print(merge_lists(list1,list2))
+
