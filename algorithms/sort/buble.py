@@ -2,8 +2,7 @@
 def sort_bubble(list: list)->list:
 
   for i in reversed(range(len(list))):
-    j = 0
-    for j in range(j,i):
+    for j in range(0,i):
       if list[j] > list[j+1]:
         buff = list[j]
         list[j] = list[j+1]
