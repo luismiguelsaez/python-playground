@@ -9,6 +9,17 @@ def sort_bubble(list: list)->list:
 
   return list
 
+def sort_bubble_alt(list: list)->list:
+  
+  last = len(list)
+  while last > 0:
+    for i in range(last-1):
+        if list[i] > list[i+1]:
+            list[i], list[i+1] = list[i+1], list[i]
+    last -= 1
+
+  return list
+
 def find_split(list: list,num: int)->list[list]:
 
   if len(list) % 2 != 0:
