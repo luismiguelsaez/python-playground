@@ -35,11 +35,11 @@ def merge_lists(l1:list, l2:list)->list:
       idx2 += 1
 
   if idx1 == len(l1):
-    for i in l2[idx2:]:
-      merged_list.append(i)
+    #merged_list = merged_list + l2[idx2:]
+    merged_list = [*merged_list, *l2[idx2:]] 
   elif idx2 == len(l2):
-    for i in l1[idx1:]:
-      merged_list.append(i)
+    #merged_list = merged_list + l1[idx1:]
+    merged_list = [*merged_list, *l1[idx1:]]
 
   return merged_list
 
