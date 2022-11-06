@@ -1,3 +1,6 @@
+import logging
+from sys import stdout as sys_stdout
+
 from sqlalchemy import (
   Table,
   String,
@@ -15,6 +18,7 @@ from sqlalchemy_utils import (
   database_exists,
   create_database,
 )
+
 
 def create_db(db_name: str, db_user: str)->None:
   engine = create_engine(url='mysql+pymysql://' + db_user + '@localhost/' + db_name )
@@ -41,21 +45,23 @@ def create_db(db_name: str, db_user: str)->None:
       create_database(engine.url)
     metadata.create_all(engine)
   except exc.OperationalError as ex:
-    print("Error connecting to database:", ex)
+    logger.error("Error connecting to database:", ex)
   else:
-    print("Database created")
+    logger.info("Database created")
 
   num_departments = 10
   num_employees = 10000
 
   conn = engine.connect()
 
+  logger.info("Adding rows to departments table")
   for i in range(num_departments):
     letters = 'abcdefghijklmnopqrstuvwxyz'
     department_name = ''.join(choices(letters, k=16))
     ins_department = table_department.insert().values(name=department_name)
     conn.execute(ins_department)
 
+  logger.info("Adding rows to employees table")
   for i in range(num_employees):
     letters = 'abcdefghijklmnopqrstuvwxyz'
     employee_name = ''.join(choices(letters, k=16))
@@ -66,4 +72,13 @@ def create_db(db_name: str, db_user: str)->None:
   conn.close()
 
 if __name__ == "__main__":
+  logger = logging.getLogger()
+  stream_handler = logging.StreamHandler(sys_stdout)
+  stream_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+  stream_handler.setFormatter(stream_formatter)
+  logger.addHandler(stream_handler)
+  logger.setLevel(logging.DEBUG)
+  stream_handler.setLevel(logging.DEBUG)
+
+  logger.info("Creating database")
   create_db('company', 'root')
