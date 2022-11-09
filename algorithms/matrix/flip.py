@@ -1,4 +1,5 @@
 from random import randrange
+from copy import deepcopy
 
 def flip_row(matrix: list[list], row: int)->list[list]:
 
@@ -41,8 +42,8 @@ def main():
 
   max = 0
   for i in range(len(test_matrix)):
-    tmp_matrix = test_matrix[:]
     for j in range(len(test_matrix)):
+      tmp_matrix = deepcopy(test_matrix)
       tmp_matrix = flip_row(tmp_matrix, i)
       tmp_matrix = flip_col(tmp_matrix, j)
       tmp_sum = sum_quadrant(tmp_matrix)
