@@ -14,11 +14,6 @@ def flip_col(matrix: list[list], col: int)->list[list]:
   for i in range(max//2):
     matrix[i][col],matrix[max-i-1][col] = matrix[max-i-1][col],matrix[i][col]
 
-  #column = [matrix[i][col] for i in range(len(matrix))]
-  #column = column[::-1]
-  #for i in range(len(matrix)):
-  #  matrix[i][col] = column[i]
-
   return matrix
 
 
