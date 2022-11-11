@@ -7,7 +7,7 @@ def merge_lists(list1: list,list2: list)->list:
     merged = []
 
     while count1 < len(list1) and count2 < len(list2):
-     
+
       if list1[count1] < list2[count2]:
           merged.append(list1[count1])
           count1 += 1
