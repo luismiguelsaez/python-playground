@@ -11,9 +11,12 @@ def lambda_handler(event, context):
     logger.addHandler(h_stdout)
     logger.setLevel(logging.DEBUG)
 
-    session = boto3.Session()
-
-    client_ecr = session.client("ecr")
+    try:
+        session = boto3.Session()
+        client_ecr = session.client("ecr")
+    except Exception as e:
+        logger.error("Error while creating session: {}".format(e))
+        return { 'message' : "Error while creating session: {}".format(e) }
 
     logger.debug("Event: {}".format(str(event)))
 
