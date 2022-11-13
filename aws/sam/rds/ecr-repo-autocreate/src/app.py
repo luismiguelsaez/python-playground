@@ -43,12 +43,15 @@ def lambda_handler(event, context):
                 )
         except boto3.RepositoryAlreadyExistsException as repoException:
             logger.error("Repository [{}] already exists:{}".format(repo_name,repoException))
+            logger.debug("ECR API response: {}".format(str(response)))
             return { 'message' : "Repository [{}] already exists:{}".format(repo_name,repoException) }
         except Exception as exception:
             logger.error("Error while creating repository [{}]: {}")
+            logger.debug("ECR API response: {}".format(str(response)))
             return { 'message' : "Error while creating repository [{}]: {}".format(repo_name,exception) }
         else:
             logger.info("Repository [{}] created".format(repo_name))
+            logger.debug("ECR API response: {}".format(str(response)))
             return { 'message': "Repository [{}] created".format(repo_name) }
 
 
