@@ -30,8 +30,8 @@ def lambda_handler(event, context):
                     repositoryName=repo_name,
                     tags=[
                         {
-                        'Key':'auto-create',
-                        'Value':'true'
+                            'Key':'auto-create',
+                            'Value':'true'
                         }
                     ],
                     imageScanningConfiguration={
