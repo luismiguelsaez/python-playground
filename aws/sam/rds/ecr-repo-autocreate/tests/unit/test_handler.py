@@ -18,7 +18,9 @@ def eventbridge_event():
             "account": "111122223333",
             "time": "2017-12-22T18:43:48Z",
             "region": "eu-central-1",
-            "resources": [],
+            "resources": [
+                "arn:aws:events:us-east-1:123456789012:rule/ExampleRule"
+            ],
             "detail": {
                 "requestParameters": {
                     "repositoryName": "test/alpine"
