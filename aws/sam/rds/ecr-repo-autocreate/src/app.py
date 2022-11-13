@@ -32,11 +32,9 @@ def lambda_handler(event, context):
                 }
                 )
         except boto3.RepositoryAlreadyExistsException as repoException:
-            error = True
-            message = "Repository [{}] already exists:{}".format(repo_name,repoException)
+            return { 'message' : "Repository [{}] already exists:{}".format(repo_name,repoException) }
         except Exception as exception:
-            error = True
-            message = "Error while creating repository [{}]: {}".format(repo_name,exception)
+            return { 'message' : "Error while creating repository [{}]: {}".format(repo_name,exception) }
         else:
             return { 'message': "Repository [{}] created".format(repo_name) }
 
