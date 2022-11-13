@@ -13,6 +13,6 @@ for addr in btc_addrs:
     n = list(filter(lambda x:x['addr'] == addr, transaction['out']))
     for t in n:
       sum += t['value']/100000000
-      print("Address", addr, t['value']/100000000)
+      print("Address", addr, t['value']/100000000, "BTC")
 
-print("Total", sum)
+print("Total", sum, "BTC")
