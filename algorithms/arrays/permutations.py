@@ -1,4 +1,5 @@
 from itertools import permutations
+from timeit import timeit
 
 def twoArrays(k, A, B):
     
@@ -55,10 +56,11 @@ def main():
   a = [ 4, 4, 3, 2, 1, 4, 4, 3, 2, 4 ]
   b = [ 2, 3, 0, 1, 1, 3, 1, 0, 0, 2 ]
   #print("RES", twoArraysAlt(4, a, b))
+  print(twoArraysAlt(4, a, b))
 
   # YES
   a = [ 3, 6, 8, 5, 9, 9, 4, 8, 4, 7 ]
   b = [ 5, 1, 0, 1, 6, 4, 1, 7, 4, 3 ]
-  print("RES", twoArraysAlt(9, a, b))
+  #print("RES", twoArraysAlt(9, a, b))
 
 main()
