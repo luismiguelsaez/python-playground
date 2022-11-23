@@ -11,7 +11,7 @@ def es_search(queries: list, result: list, index: int, num: int, sleep_time: flo
   for i in range(num):
     query = queries[randrange(len(queries))]
     resp = es_cli.search(
-      index='lokalise-translation-memory-2022-06-01',
+      index='test-index-0000',
       query=query,
       size=20)
 
