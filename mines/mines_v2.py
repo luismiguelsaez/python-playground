@@ -9,12 +9,9 @@ def place_mines(panel: list, num: int, content: str='o')->list:
 
   s = len(panel)
 
-  combinations = []
-  for i in range(s):
-    for j in range(s):
-      combinations.append((i, j))
+  combinations = [(i, j) for i in range(s) for j in range(s)]
 
-  for i in range(num):
+  for _ in range(num):
     z = randrange(len(combinations))
     x = combinations[z][0]
     y = combinations[z][1]
