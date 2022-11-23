@@ -6,7 +6,7 @@ import logging
 from sys import stdout
 
 
-def es_search(queries: list, result: list, index: int, num: int):
+def es_search(queries: list, result: list, index: int, num: int, sleep_time: float=0):
   logger.info(f"Launching {num} queries")
   for i in range(num):
     query = queries[randrange(len(queries))]
@@ -22,6 +22,8 @@ def es_search(queries: list, result: list, index: int, num: int):
     else:
       result[index] = f"No docs retrieved"
 
+    sleep(sleep_time)
+
 
 def main():
   t_num = 40
@@ -32,7 +34,7 @@ def main():
   logger.info(f"Starting script with {t_num} threads and {q_num} reqs per thread")
 
   for i in range(len(threads)):
-    threads[i] = threading.Thread(target=es_search, args=(queries, results, i, q_num))
+    threads[i] = threading.Thread(target=es_search, kwargs=({"queries": queries, "result": results, "index": i, "num": q_num, "sleep_time": 0.0}))
 
   for i in range(len(threads)):
     logger.info(f"Launching thread [{i}]")
