@@ -11,7 +11,7 @@ def es_search(queries: list, result: list, index: int, num: int, sleep_time: flo
   for i in range(num):
     query = queries[randrange(len(queries))]
     resp = es_cli.search(
-      index='test-index-0000',
+      index='lokalise-translation-memory-2022-06-01',
       query=query,
       size=20)
 
@@ -26,8 +26,8 @@ def es_search(queries: list, result: list, index: int, num: int, sleep_time: flo
 
 
 def main():
-  t_num = 40
-  q_num = 1500
+  t_num = 60
+  q_num = 200
   threads = [None for _ in range(t_num)]
   results = [None for _ in range(t_num * q_num )]
 
@@ -40,15 +40,15 @@ def main():
     logger.info(f"Launching thread [{i}]")
     threads[i].start()
 
-  for i in range(len(threads)):
-    logger.info(f"Joining thread [{i}]")
-    print(threads[i].join())
+  #for i in range(len(threads)):
+  #  logger.info(f"Joining thread [{i}]")
+  #  print(threads[i].join())
 
   print(len(results))
 
 
 master_nodes = ['10.18.34.36','10.18.8.71','10.18.84.184']
-data_tm_nodes = ['10.18.78.149','10.18.60.81','10.18.7.144']
+data_tm_nodes = ['10.18.31.188','10.18.84.59','10.18.62.38']
 
 es_cli = elasticsearch.Elasticsearch(data_tm_nodes)
 
