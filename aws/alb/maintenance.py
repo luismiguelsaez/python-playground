@@ -1,5 +1,5 @@
 import boto3
-from json import dumps
+from json import dumps as json_dumps
 import argparse
 
 # Parse arguments
@@ -7,13 +7,15 @@ parser = argparse.ArgumentParser(prog="maintenance.py", description="Set mainten
 parser.add_argument('-a', '--action',    action='store', choices=['update', 'delete'], required=True)
 parser.add_argument('-c', '--component', action='store', choices=['app', 'api'], required=True)
 parser.add_argument('-t', '--time',      action='store', required=False)
-parser.add_argument('-r', '--iam-role',            action='store', required=False)
 parser.add_argument('--lb-name',                   action='store', default=None, required=False)
 parser.add_argument('--lb-region',                 action='store', default='eu-central-1', required=False)
 parser.add_argument('--lb-listener-port',          action='store', default=443, required=False)
 parser.add_argument('--lb-listener-rule-priority', action='store', default=1, required=False)
 parser.add_argument('--lb-listener-rule-path',     action='store', default='/', required=False)
 parser.add_argument('--content-base',              action='store', default='https://lokalise-stage-lok-app-main-assets.s3.eu-central-1.amazonaws.com', required=False)
+group = parser.add_mutually_exclusive_group()
+group.add_argument('-r', '--iam-role', action='store', required=False)
+group.add_argument('-p', '--profile',  action='store', required=False)
 args = parser.parse_args()
 
 # Default messages
@@ -66,7 +68,7 @@ if args.component == "app":
   message = html_body_compact
   content_type = "text/html"
 else:
-  message = dumps(json_body)
+  message = json_dumps(json_body)
   content_type = "application/json"
 
 message_size = len(message)
@@ -81,8 +83,11 @@ if args.iam_role != None:
       aws_secret_access_key=creds['Credentials']['SecretAccessKey'],
       aws_session_token=creds['Credentials']['SessionToken'],
       region_name=args.lb_region)
+elif args.profile != None:
+  s = boto3.Session(profile_name=args.profile)
 else:
-  s = boto3.Session(profile_name='lokalise-admin-stage')
+  raise ValueError(f"You need to specify either an IAM role or AWS local profile")
+
 
 c = s.client("elbv2")
 
