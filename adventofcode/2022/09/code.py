@@ -14,12 +14,15 @@ def update_grid(g: list, c_pos: tuple, p_pos: tuple, c: str)->list:
 
 def check_touch(c_pos: tuple, p_pos: tuple)->bool:
   if p_pos not in [ (c_pos[0]+1, c_pos[1]),(c_pos[0]-1, c_pos[1]),(c_pos[0], c_pos[1]+1),(c_pos[0], c_pos[1]-1),
-                      (c_pos[0]+1, c_pos[1]+1),(c_pos[0]-1, c_pos[1]-1),(c_pos[0]-1, c_pos[1]+1),(c_pos[0]+1, c_pos[1]-1) ]:
+                    (c_pos[0]+1, c_pos[1]+1),(c_pos[0]-1, c_pos[1]-1),(c_pos[0]-1, c_pos[1]+1),(c_pos[0]+1, c_pos[1]-1),
+                    c_pos ]:
+    #print(f"{c_pos} not touching {p_pos}")
     return False
   else:
     return True
 
-p = 0
+ph = 0
+pt = 0
 start_pos = (10, 10)
 positions_h = []
 positions_h.append(start_pos)
@@ -29,32 +32,44 @@ positions_t.append(start_pos)
 grid[start_pos[0]][start_pos[1]] = 'T'
 grid[start_pos[0]][start_pos[1]] = 'H'
 
-with open('example.txt') as file:
+with open('input.txt') as file:
   lines = file.readlines()
   for i in range(len(lines)):
     dir = lines[i].strip()[0:1]
     num = int(lines[i].strip()[1:])
     for i in range(num):
       if dir == 'U':
-        cur_pos = (positions_h[p][0]-1, positions_h[p][1])
+        cur_pos = (positions_h[ph][0]-1, positions_h[ph][1])
         positions_h.append(cur_pos)
       if dir == 'D':
-        cur_pos = (positions_h[p][0]+1, positions_h[p][1])
+        cur_pos = (positions_h[ph][0]+1, positions_h[ph][1])
         positions_h.append(cur_pos)
       if dir == 'R':
-        cur_pos = (positions_h[p][0], positions_h[p][1]+1)
+        cur_pos = (positions_h[ph][0], positions_h[ph][1]+1)
         positions_h.append(cur_pos)
       if dir == 'L':
-        cur_pos = (positions_h[p][0], positions_h[p][1]-1)
+        cur_pos = (positions_h[ph][0], positions_h[ph][1]-1)
         positions_h.append(cur_pos)
-      p += 1
+      ph += 1
 
+      #grid = update_grid(grid, positions_h[ph], positions_h[ph-1], 'H')
+      if not check_touch(positions_h[ph], positions_t[pt]):
+        positions_t.append(positions_h[ph-1])
+        #grid = update_grid(grid, positions_h[ph-1], positions_t[pt], 'T')
+        #if positions_h[ph] == positions_t[pt]:
+        #  grid[positions_h[ph][0]][positions_h[ph][1]] = 'H'
+        pt += 1
+      else:
+        positions_t.append(positions_t[pt])
+        pt += 1
+
+      #input()
       # Show grid
-      print_grid(grid)
-      #grid[positions_t[-1][0]][positions_t[-1][1]] = 'T'
-      grid = update_grid(grid, positions_h[p], positions_h[p-1], 'H')
-      if not check_touch(positions_h[p], positions_t[-1]):
-        print(f"Not in touch {p}")
-      sleep(5)
+      #print_grid(grid)
+      #print(f"Positions H: {positions_h}")
+      #print(f"Positions T: {positions_t}")
+      #sleep(1)
+      #input()
 
-#print(positions_h)
+print(f"Number positions T: {len(positions_t)}")
+print(f"Number unique positions T: {len(set(positions_t))}")
