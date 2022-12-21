@@ -52,14 +52,16 @@ def rope_init(input_lines: list, num: int)->list:
   for dir, steps in input_lines:
     for _ in range(int(steps)):
       # Set new position for head node
-      rope[0].set_position((rope[0].get_position()[0] + directions[dir][0], rope[0].get_position()[1] + directions[dir][1]))
+      rope[0].set_position((rope[0].get_position()[0] + directions[dir][0],
+                            rope[0].get_position()[1] + directions[dir][1]))
 
       # Update nodes positions
       for n in range(1,len(rope)):
         parent_position = rope[n-1].get_position()
         node_position = rope[n].get_position()
         if abs(parent_position[0] - node_position[0]) > 1 or abs(parent_position[1] - node_position[1]) > 1:
-          middle_position = (int((parent_position[0]+node_position[0])/2), int((parent_position[1]+node_position[1])/2))
+          middle_position = (int((parent_position[0]+node_position[0])/2),
+                             int((parent_position[1]+node_position[1])/2))
           rope[n].set_position(middle_position)
 
       if print_enabled:
