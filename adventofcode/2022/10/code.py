@@ -6,7 +6,7 @@ def main():
   signal_strength_total = 0
   register = 1
   cycle = 0
-  cycle_time = 0.01
+  cycle_time = 0
   pixel_pos = 0
   rows = [['.' for _ in range(40)] for _ in range(6)]
   row = 0
@@ -31,6 +31,7 @@ def main():
       
   print(f"Part 1: signal strength total: {signal_strength_total}")
   # Result part 1: 16020
+  print(f"Part 2:")
   for r in rows:
     print(*r, sep='')
   # Result part 2:
@@ -40,4 +41,5 @@ def main():
   #....#.....#...#..#..#...####.#....###..
   #....#..#.#....#..#.#....#..#.#....#.#..
   ####..##..####..##..####.#..#.####.#..#.
+
 main()
