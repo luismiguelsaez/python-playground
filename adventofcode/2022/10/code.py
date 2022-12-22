@@ -29,6 +29,7 @@ def main():
         signal_strength_total += signal_strength
     if op == 'addx':register += inc
       
+  # Print results
   print(f"Part 1: signal strength total: {signal_strength_total}")
   # Result part 1: 16020
   print(f"Part 2:")
