@@ -17,14 +17,14 @@ def main():
     cycle_count = 1 if op == 'noop' else 2
     if op == 'addx': inc = int(data[i].split()[1])
     for _ in range(cycle_count):
-      sleep(cycle_time)
+      sleep(cycle_time) # Only for debugging purposes
       cycle += 1
-      pixel_pos = cycle-1
-      row = pixel_pos//40
-      pixel_pos_row = pixel_pos - (row*40)
-      if pixel_pos_row in [i for i in range(register-1, register+2)]:
+      pixel_pos = cycle-1 # Pixel position is 0-40, where cycle starts at 1
+      row = pixel_pos//40 # Find row number 1-6
+      pixel_pos_row = pixel_pos - (row*40) # Calculate pixel position within current row
+      if pixel_pos_row in [i for i in range(register-1, register+2)]: # Check if the pixel position falls into sprite positions (3 pixel wide)
         rows[row][pixel_pos_row] = '#'
-      if cycle == 20 or ((cycle - 20) % 40) == 0:
+      if cycle == 20 or ((cycle - 20) % 40) == 0: # Check if we are in the cycle whose signal strength we need to take into account
         signal_strength = cycle*register
         signal_strength_total += signal_strength
     if op == 'addx':register += inc
