@@ -54,31 +54,42 @@ def main():
       grid[x].append(n)
 
   # Create queue
+  start_position = (20, 0)
   queue = []
-  queue.append(grid[20][0])
+  queue.append(grid[start_position[0]][start_position[1]])
   cur_node = None
 
   while queue:
     cur_node = queue.pop()
     cur_node.set_visited()
-    print(f"- Current node {cur_node.get_position()} height [{cur_node.get_height()}]")
+    #print(f"- Current node {cur_node.get_position()} height [{cur_node.get_height()}]")
     if cur_node.isend:
-      print(f"End node")
+      #print(f"End node")
       break
     find_neighbors(grid, cur_node)
     for neighbor in cur_node.get_neighbors():
-      print(f"  - Neighbor: {neighbor.get_position()}")
+      #print(f"  - Neighbor: {neighbor.get_position()}")
       if not neighbor.visited and neighbor.get_height() <= cur_node.get_height() + 1:
         neighbor.set_visited()
         neighbor.set_parent(cur_node)
         queue.insert(0, neighbor)
 
+  # Create vizualization grid
+  vgrid = [['.' for j in range(len(grid[0]))] for i in range(len(grid))]
+
   # Get path
-  print(f"Node {cur_node.get_position()}")
   steps = 0
+  end_node = cur_node
+  vgrid[end_node.get_position()[0]][end_node.get_position()[1]] = 'E'
   while not cur_node.isstart:
     steps += 1
     cur_node = cur_node.get_parent()
-  print(f"Part 1: {steps}")
+    vgrid[cur_node.get_position()[0]][cur_node.get_position()[1]] = 'o'
+  vgrid[grid[start_position[0]][start_position[1]].get_position()[0]][grid[start_position[0]][start_position[1]].get_position()[1]] = 'S'
+  print(f"Part 1: from {cur_node.get_position()} to {end_node.get_position()} took {steps}")
+
+  # Print grid
+  for r in vgrid:
+    print(*r, sep='')
 
 main()
