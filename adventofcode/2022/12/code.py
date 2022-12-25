@@ -45,7 +45,7 @@ def check_path(grid: list, spos: tuple):
   start_position = spos
   queue = []
   queue.insert(0, grid[start_position[0]][start_position[1]])
-  cur_node = None
+  cur_node = grid[start_position[0]][start_position[1]]
 
   while queue:
     cur_node = queue.pop()
@@ -101,6 +101,7 @@ def create_grid(start_position: tuple)->list:
 
 
 def print_grid(g: list)->None:
+
   for row in range(len(g)):
     r = []
     for col in range(len(g[row])):
