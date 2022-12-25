@@ -8,6 +8,7 @@ class Node:
     self.isend = False
     self.isstart = False
     self.parent = None
+    self.ispath = False
   def get_position(self):
     return self.pos
   def get_height(self):
@@ -26,11 +27,12 @@ class Node:
     self.isend = True
   def set_isstart(self):
     self.isstart = True
+  def set_ispath(self):
+    self.ispath = True
 
 
 def find_neighbors(g: list, n: Node)->None:
   r, c = n.get_position()
-  #for r1, c1 in [(1, 0), (0, 1), (-1, 0), (0, -1)]:
   for r1, c1 in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
     if r + r1 >= 0 and c + c1 >= 0 and r + r1 < len(g) and c + c1 < len(g[0]):
       if not g[r+r1][c+c1].visited:
@@ -60,34 +62,17 @@ def check_path(grid: list, spos: tuple):
   if not cur_node.isend:
     raise ValueError("We didn't reach end node")
 
-
-  #print(f"Current node is the end {cur_node.get_position()}")
-  #while cur_node.get_parent() is not None:
-  #  cur_node = cur_node.get_parent()
-  #  print(f"Current node {cur_node.get_position()}")
-  #  #input()
-  #exit()
-
-  # Create vizualization grid
-  vgrid = [['.' for j in range(len(grid[0]))] for i in range(len(grid))]
-
   # Get path
   steps = 0
   end_node = cur_node
   path_positions = []
-  vgrid[end_node.get_position()[0]][end_node.get_position()[1]] = 'E'
   while cur_node.get_parent() is not None:
     path_positions.insert(0, cur_node.get_position())
     steps += 1
     cur_node = cur_node.get_parent()
-    vgrid[cur_node.get_position()[0]][cur_node.get_position()[1]] = 'o'
-  vgrid[grid[start_position[0]][start_position[1]].get_position()[0]][grid[start_position[0]][start_position[1]].get_position()[1]] = 'S'
+    cur_node.set_ispath()
 
-  # Print grid
-  #for r in vgrid:
-  #  print(*r, sep='')
-
-  return cur_node.get_position(), end_node.get_position(), steps
+  return grid, cur_node.get_position(), end_node.get_position(), steps
 
 
 def create_grid(start_position: tuple)->list:
@@ -115,14 +100,32 @@ def create_grid(start_position: tuple)->list:
   return grid
 
 
+def print_grid(g: list)->None:
+  for row in range(len(g)):
+    r = []
+    for col in range(len(g[row])):
+      if g[row][col].ispath:
+        r.append('#')
+      elif g[row][col].isstart:
+        r.append('S')
+      elif g[row][col].isend:
+        r.append('E')
+      else:
+        r.append('.')
+    print(*r, sep='')
+
+
 def main():
 
-  start_position = (0, 0)
+  start_position = (20, 0)
   grid = create_grid(start_position)
 
-  start, end, steps = check_path(grid, start_position)
+  grid, start, end, steps = check_path(grid, start_position)
   print(f"Part 1: from {start} to {end} took {steps} steps")
   # Result: 420
+
+  # Print grid path
+  print_grid(grid)
 
   # Check `a` heights in grid
   start_points = []
@@ -135,7 +138,7 @@ def main():
   for p in start_points:
     g = create_grid(p)
     try:
-      start, end, steps = check_path(g, p)
+      grid, start, end, steps = check_path(g, p)
     except ValueError:
       pass
 
@@ -144,5 +147,8 @@ def main():
 
   print(f"Part 2: shortest path is {min(steps_count)}")
   # Result: 414
+
+  # Print grid path
+  print_grid(grid)
 
 main()
