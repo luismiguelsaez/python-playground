@@ -1,52 +1,75 @@
+import string
 
-with open('example.txt') as file:
-  lines = file.readlines()
-
-cur_dir = ''
-sum_sw = False
-sum_dir = {}
-
-route = []
-
-for i in range(len(lines)):
-  line = lines[i].strip()
-  if line[0] == '$':
-    cmd = line[2:]
-    if cmd[0:2] == 'cd':
-      if cmd[3:5] == '..':
-        route.pop()
-      else:
-        cur_dir = cmd[3:]
-        route.append(cur_dir)
-      print(f"Current path: {route} - /{'/'.join(route[1:])}")
-      #print(f"Change to dir {cur_dir}")
-    elif cmd[0:2] == 'ls':
-      pass
-  else:
-    if line[0:3] == 'dir':
-      dir_name = line[4:]
-      #print(f"Adding dir {dir_name} to cur dir {cur_dir}")
-      #if cur_dir in sum_dir:
-      #  sum_dir[cur_dir] += int(sum_dir[dir_name])
-      #else:
-      #  sum_dir[cur_dir] = int(sum_dir[dir_name])
-      #print(f"  Dir {line[4:]} in dir {cur_dir}")
-      pass
+class Node:
+  def __init__(self, name: str, is_dir: bool = False, is_root: bool = False, size: int = 0):
+    self.name = name
+    self.is_dir = is_dir
+    self.is_root = is_root
+    if is_dir:
+      self.children = []
     else:
-      f_size = line.split(' ')[0]
-      f_name = line.split(' ')[1]
-      #print(f"  File {f_name} in dir {cur_dir}")
-      #print(f"Adding file {f_name}/{f_size} to dir {cur_dir}")
-      if cur_dir in sum_dir:
-        sum_dir[cur_dir] += int(f_size)
+      self.size = size
+  def add_child(self, n):
+    self.children.append(n)
+  def set_parent(self, n):
+    self.parent = n
+  def get_parent(self):
+    return self.parent
+  def get_path(self):
+    path = []
+    n = self
+    while n.name != '/':
+      path.insert(0, n.name)
+      n = n.parent
+    return "/".join(path)
+  def print_children(self):
+    for c in self.children:
+      if c.is_dir:
+        print(f"dir {c.name}")
       else:
-        sum_dir[cur_dir] = int(f_size)
+        print(f"{c.size} {c.name}")
+  def is_child(self, name):
+    for c in self.children:
+      if c.name == name:
+        return c
+      else:
+        return None
 
 
-exit()
-sum_total = 0
-for dir in list(filter(lambda x: x[1] > 100000,sorted(sum_dir.items(), key=lambda x:x[1]))):
-  sum_total += dir[1]
+def main() -> None:
 
-print(f"Dirs: {sum_dir}")
-print("Total:", sum_total)
+  """Read the lines from the data file"""
+  with open('example.txt') as f:
+    lines = [x.strip() for x in f.readlines()]
+
+  root = Node(name='/', is_dir=True, is_root=True)
+  cur_dir = root
+  for l in lines:
+    if l[0] == '$':
+      if l[2:4] == 'cd':
+        dir = l.split()[2]
+        if dir == '/':
+          cur_dir = root
+        elif dir == '..':
+          cur_dir = cur_dir.parent
+        else:
+          check = cur_dir.is_child(dir)
+          if check is not None:
+            cur_dir = check
+          else:
+            n = Node(name=dir, is_dir=True, is_root=False)
+            n.set_parent(cur_dir)
+            cur_dir = n
+    elif l[0:3] == 'dir':
+      dir_name = l.split()[1]
+      n = Node(name=dir_name, is_dir=True, is_root=False)
+      cur_dir.add_child(n)
+    elif l[0] in string.digits:
+      file_name = l.split()[1]
+      file_size = l.split()[0]
+      n = Node(name=file_name, is_dir=False, is_root=False, size=int(file_size))
+      cur_dir.add_child(n)
+
+  print(root.print_children())
+
+main()
