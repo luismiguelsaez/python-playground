@@ -18,7 +18,7 @@ for i in range(len(input_data)):
     buckets[b]['cur'] -= 1
 
     if buckets[b]['cur'] < 0:
-      res = 'drop'
+      res = f'drop bucket {b} execeeded'
       break
     else:
       res = 'forward'
