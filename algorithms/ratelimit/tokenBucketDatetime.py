@@ -14,21 +14,21 @@ input_data = [
   '13:00:05', '13:00:06', '13:00:07', '13:00:08', '13:00:09', '13:00:10',
 ]
 
-b = 1
 for i in range(len(input_data)):
-  if i == 0: buckets[b]['t_ini'] = input_data[i]
+  for b in buckets:
+    if i == 0: buckets[b]['t_ini'] = input_data[i]
 
-  diff = int(datetime.strptime(input_data[i],'%H:%M:%S').strftime("%s")) - int(datetime.strptime(buckets[b]['t_ini'],'%H:%M:%S').strftime("%s"))
-  if diff >= b:
-    buckets[b]['cur'] = buckets[b]['max']
-    buckets[b]['t_ini'] = input_data[i]
-  
-  buckets[b]['cur'] -= 1
+    diff = int(datetime.strptime(input_data[i],'%H:%M:%S').strftime("%s")) - int(datetime.strptime(buckets[b]['t_ini'],'%H:%M:%S').strftime("%s"))
+    if diff >= b:
+      buckets[b]['cur'] = buckets[b]['max']
+      buckets[b]['t_ini'] = input_data[i]
+    
+    buckets[b]['cur'] -= 1
 
-  if buckets[b]['cur'] < 0:
-    res = f'drop bucket {b} execeeded'
-    #break
-  else:
-    res = 'forward'
+    if buckets[b]['cur'] < 0:
+      res = f'drop bucket {b} execeeded'
+      break
+    else:
+      res = 'forward'
 
   print(f"{input_data[i],buckets[b]['cur'], res}")
