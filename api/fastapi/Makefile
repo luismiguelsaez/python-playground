@@ -17,4 +17,9 @@ test:
 	curl -XGET localhost:8000/list
 
 helm-install:
-	helm install fastapi helm/fastapi
+	helm repo add bitnami https://charts.bitnami.com/bitnami
+	helm upgrade --install mariadb bitnami/mariadb --create-namespace -n db -f helm/mariadb/values.yaml
+	helm upgrade --install fastapi helm/fastapi --create-namespace -n frontend
+
+k8s-test:
+	k run test --image busybox -ti --rm -- sh -c "wget http://fastapi.frontend.svc.cluster.local/list -O-"

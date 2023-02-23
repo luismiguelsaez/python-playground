@@ -6,13 +6,13 @@ replicaCount: 1
 
 image:
   repository: docker.io/luismiguelsaez/fastapi
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: latest
 
 env:
   - name: DB_CONN
-    value: ""
+    value: mysql+mysqlconnector://app:str0ngP4sS@mariadb.db.svc.cluster.local:3306/ips
 
 imagePullSecrets: []
 nameOverride: ""

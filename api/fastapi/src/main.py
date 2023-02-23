@@ -43,3 +43,7 @@ def list_ip():
   rows = session.execute(stmt).fetchall()
 
   return {"ips": [ip['address'] for ip in rows]}
+
+@app.get("/health")
+def healthcheck():
+  return {"health": "ok"}

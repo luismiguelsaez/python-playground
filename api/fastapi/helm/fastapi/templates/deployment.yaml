@@ -35,7 +35,7 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           {{- with .Values.env }}
           env:
-            {{- toYaml . | nindent 4 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           ports:
             - name: http
@@ -43,11 +43,11 @@ spec:
               protocol: TCP
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

@@ -1,0 +1,5 @@
+auth:
+  rootPassword: "toor"
+  database: ips
+  username: app
+  password: str0ngP4sS
