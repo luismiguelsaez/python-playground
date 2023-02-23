@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from os import environ as os_env
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, insert
 from sqlalchemy.orm import sessionmaker
 from db.create import init as db_init
 
@@ -12,7 +12,7 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 try:
-  db_init(engine)
+  ips_table = db_init(engine)
 except Exception as db_exc:
   print(f'Error while initializing the DB: {db_exc}')
   exit(1)
@@ -21,8 +21,16 @@ app = FastAPI()
 
 @app.get("/")
 def insert_ip(request: Request):
-    client_host = request.client.host
-    return {"client_host": client_host}
+    client_ip = request.client.host
+    stmt = (
+      insert(ips_table).values(address=client_ip)
+    )
+    try:
+      session.execute(stmt)
+      session.commit()
+    except Exception as insert_exc:
+      print(f'Error while inserting row: {insert_exc}')
+    return {"client_ip": client_ip}
 
 @app.get("/list")
 def list_ip():
