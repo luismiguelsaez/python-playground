@@ -1,2 +1,4 @@
 **/cdk.out
 **/.venv
+
+**/terragrunt-cache
