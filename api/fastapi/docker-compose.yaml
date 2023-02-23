@@ -1,0 +1,30 @@
+version: "2.3"
+
+services:
+
+  db:
+    image: mariadb:10.11
+    environment:
+      - MYSQL_ROOT_PASSWORD=toor
+      - MYSQL_DATABASE=ips
+      - MYSQL_USER=app
+      - MYSQL_PASSWORD=str0ngP4sS
+    # Using healthcheck to manage the app dependency and prevent connection errors
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "0.0.0.0", "-u", "$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 1s
+      timeout: 1s
+      retries: 3
+      start_period: 2s
+
+
+  app:
+    build: .
+    ports:
+      - 8000:8000
+    environment:
+      # Doc: https://docs.sqlalchemy.org/en/20/dialects/mysql.html
+      - DB_CONN=mysql+mysqlconnector://app:str0ngP4sS@db:3306/ips
+    depends_on:
+      db:
+        condition: service_healthy
