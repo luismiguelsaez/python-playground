@@ -26,11 +26,13 @@ inputs = {
   cluster_version = "1.24"
 
   cluster_endpoint_private_access = true
-  cluster_endpoint_public_access  = false
+  # Enabling public endpoint this time, but it must be limited to internal networks, from VPN for example
+  cluster_endpoint_public_access  = true
 
   vpc_id                   = dependency.vpc.outputs.vpc_id
   subnet_ids               = dependency.vpc.outputs.private_subnets
 
+  # Enabling encryption of k8s secrets
   create_kms_key = true
 
   cluster_encryption_config = {

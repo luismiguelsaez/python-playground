@@ -24,24 +24,16 @@ dependency "vpc" {
   }
 }
 
-dependency "kms_ebs" {
-  config_path                             = "${get_terragrunt_dir()}/../../kms"
-  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info"]
-  mock_outputs = {
-    key_arn = "arn:aws:kms:eu-central-1:012345678912:key/012345678912"
-  }
-}
-
 ############################################################################################################################
 # View all available inputs for this module:
 # https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/19.6.0/submodules/eks-managed-node-group?tab=inputs
 ############################################################################################################################
 
 inputs = {
-  name            = "${include.locals.name}-system"
+  name            = "${include.locals.name}-default"
   cluster_name    = include.locals.name
   use_name_prefix = false
-  iam_role_name   = "${include.locals.name}-system-eks-ng"
+  iam_role_name   = "${include.locals.name}-default-eks-ng"
 
   create_launch_template      = true
   launch_template_name        = ""
@@ -55,7 +47,7 @@ inputs = {
   disk_size    = 50
   min_size     = 3
   desired_size = 3
-  max_size     = 20
+  max_size     = 5
 
   vpc_id     = dependency.vpc.outputs.vpc_id
   subnet_ids = dependency.vpc.outputs.private_subnets
@@ -68,9 +60,10 @@ inputs = {
   }
 
   labels = {
-    "role" : "system",
+    "role" : "default",
   }
 
+  # Adding taing for Cilium
   taints = [
     {
       key    = "node.cilium.io/agent-not-ready"
@@ -86,14 +79,15 @@ inputs = {
     xvda = {
       device_name = "/dev/xvda"
       ebs = {
-        volume_size           = 50
+        volume_size           = 20
         volume_type           = "gp3"
-        encrypted             = true
-        kms_key_id            = dependency.kms_ebs.outputs.key_arn
+        # Disabling encryption for simplicity. For live environments, KMS key encriptions should be enabled
+        encrypted             = false
         delete_on_termination = true
       }
     }
   }
+  # Updating metadata, like hop limit for EC2 metadata endpoint to be accessible from containers
   metadata_options = {
     "http_endpoint" : "enabled",
     "http_put_response_hop_limit" : 2,
@@ -103,6 +97,6 @@ inputs = {
   enable_monitoring = false
   tag_specifications = ["instance"]
   tags = {
-    Name = "${include.locals.name}-system"
+    Name = "${include.locals.name}-default"
   }
 }
