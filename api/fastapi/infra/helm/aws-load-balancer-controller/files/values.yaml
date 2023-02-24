@@ -1,0 +1,29 @@
+podLabels:
+  infra/app: aws-load-balancer-controller
+  infra/component: controller
+nodeSelector:
+  role: system
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - topologyKey: kubernetes.io/hostname
+      labelSelector:
+        matchLabels:
+          app.kubernetes.io/name: aws-load-balancer-controller
+clusterName: ${ cluster_name }
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: ${ iam_role_arn }
+resources:
+  limits:
+    memory: 300Mi
+  requests:
+    cpu: 100m
+    memory: 300Mi
+serviceMonitor:
+  enabled: false
+  additionalLabels: {}
+  interval: 1m
+  namespace:

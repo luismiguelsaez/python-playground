@@ -1,0 +1,31 @@
+provider: aws
+sources:
+  - service
+  - ingress
+policy: upsert-only
+deploymentStrategy:
+  type: Recreate
+podLabels:
+  infra/app: external-dns
+  infra/component: controller
+nodeSelector:
+  role: system
+affinity: {}
+serviceAccount:
+  create: true
+  name: external-dns
+  annotations:
+    eks.amazonaws.com/role-arn: ${ iam_role_arn }
+logLevel: info
+logFormat: json
+resources:
+  limits:
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+serviceMonitor:
+  enabled: true
+  additionalLabels: {}
+  interval: 1m
+  scrapeTimeout: 10s

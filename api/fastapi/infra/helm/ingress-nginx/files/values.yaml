@@ -1,0 +1,87 @@
+fullnameOverride: ingress-nginx-internet-facing
+controller:
+  addHeaders: {}
+  priorityClassName: system-node-critical
+  # Custom ingressClass in case we want to have a different ingress for internal purposes
+  ingressClassByName: true
+  ingressClass: nginx-internet-facing
+  ingressClassResource:
+    name: nginx-internet-facing
+    enabled: true
+    default: false
+    controllerValue: "k8s.io/ingress-nginx-internet-facing"
+  electionID: ingress-controller-external-leader
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  kind: DaemonSet
+  affinity: {}
+  healthCheckPath: /healthz
+  # Enable proxy protocol so we can pass the external IP to the ingress through the NLB
+  config:
+    use-forwarded-headers: true
+    use-proxy-protocol: true
+  # Service definition
+  service:
+    enabled: true
+    appProtocol: false
+    type: LoadBalancer
+    enableHttp: false
+    enableHttps: true
+    ports:
+      http: 80
+      https: 443
+    targetPorts:
+      http: http
+      https: http
+    httpPort:
+      enable: false
+      targetPort: http
+    httpsPort:
+      enable: true
+      targetPort: http
+    # Specific annotations for the aws-load-balancer-controlle
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-name: ingress-ext
+      service.beta.kubernetes.io/aws-load-balancer-type: external
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+      service.beta.kubernetes.io/aws-load-balancer-target-node-labels: role=default
+      service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+      service.beta.kubernetes.io/load-balancer-source-ranges: 0.0.0.0/0
+      service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: 'true'
+      service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: '300'
+      service.beta.kubernetes.io/aws-load-balancer-attributes: load_balancing.cross_zone.enabled=true
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: '443'
+      service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: tcp
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: '/nginx-health'
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-timeout: '10'
+      service.beta.kubernetes.io/aws-load-balancer-proxy-protocol: '*'
+  metrics:
+    enabled: true
+    port: 10254
+    serviceMonitor:
+      enabled: true
+      additionalLabels: {}
+      namespace: ""
+      namespaceSelector: {}
+      scrapeInterval: 15s
+      targetLabels: []
+      relabelings: []
+      metricRelabelings: []
+    prometheusRule:
+      enabled: false
+      additionalLabels: {}
+      rules: []
+  lifecycle:
+    preStop:
+      exec:
+        command:
+          - /wait-shutdown
+admissionWebhooks:
+  enabled: true
