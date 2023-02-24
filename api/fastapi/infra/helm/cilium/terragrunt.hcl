@@ -64,5 +64,6 @@ inputs = {
 
   eks_cluster_oidc_issuer_url = dependency.eks.outputs.cluster_oidc_issuer_url
 
-  values = [ ]
+  # Using template, in case something needs to be customized in the values file
+  values = [templatefile("${get_terragrunt_dir()}/files/values.yaml", {})]
 }
