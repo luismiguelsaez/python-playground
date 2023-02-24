@@ -8,6 +8,10 @@ push:
 	docker tag fastapi:latest docker.io/luismiguelsaez/fastapi:latest
 	docker push docker.io/luismiguelsaez/fastapi:latest
 
+push-ecr:
+	aws --profile <local-aws-profile> ecr get-login-password --region <aws_region> | docker login -u AWS --password-stdin https://<aws-account-id>.dkr.ecr.<aws_region>.amazonaws.com
+	docker push 053497547689.dkr.ecr.eu-central-1.amazonaws.com/fastapi:latest
+
 test:
 	echo "Creating local environment ..."
 	docker-compose up -d --build

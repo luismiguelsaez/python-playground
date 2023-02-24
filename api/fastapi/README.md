@@ -44,6 +44,8 @@
   - Deploy `ArgoCD`, pointing to a repository where all required components are defined, overridding the needed values for different environments
   - Some components requiring IAM roles for the configuration, like `external-dns` and `aws-load-balancer-controller`, are easier to deploy from `helm` provider so we can get the role ARN from outputs
   - Prometheus stack is not deployed in this case, so all `ServiceMonitor` resources are disabled in the Helm releases. Usually I tend to deploy it from `ArgoCD`
+- The image is not actually being uploaded to ECR, so I keep only a placeholder in the `Makefile` to represent how it would work and I use a Docker HUB image during the deployment
+- I don't have an account where I can test that the code actually works, so I am only testing Terragrunt `init` and `plan` commands
 
 ## Application details
 
