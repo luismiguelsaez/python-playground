@@ -1,0 +1,14 @@
+env:
+  - name: DB_CONN
+    value: ${rds_endpoint}
+
+ingress:
+  enabled: true
+  className: nginx-internet-facing
+  annotations: {}
+  hosts:
+    - host: fastapi.cluster.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
