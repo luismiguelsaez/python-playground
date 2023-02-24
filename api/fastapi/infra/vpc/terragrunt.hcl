@@ -7,6 +7,14 @@ include {
   expose = true
 }
 
+dependency "ec2_azs" {
+  config_path                             = "${get_terragrunt_dir()}/../ec2-azs"
+  mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info"]
+  mock_outputs = {
+    aws_availability_zones = [ "eu-west-1a", "eu-west-1b", "eu-west-1c" ]
+  }
+}
+
 #################################################################################################
 # View all available inputs for this module:
 # https://registry.terraform.io/modules/terraform-aws-modules/vpc/aws/3.19.0?tab=inputs
@@ -15,7 +23,7 @@ include {
 inputs = {
   name            = include.locals.name
   cidr            = include.locals.vpc_cidr
-  azs             = include.locals.az_list
+  azs             = dependency.ec2_azs.outputs.aws_availability_zones
   private_subnets = [cidrsubnet(include.locals.vpc_cidr, 2, 2), cidrsubnet(include.locals.vpc_cidr, 2, 3)]
   public_subnets  = [cidrsubnet(include.locals.vpc_cidr, 3, 2), cidrsubnet(include.locals.vpc_cidr, 3, 3)]
   intra_subnets   = [cidrsubnet(include.locals.vpc_cidr, 3, 0), cidrsubnet(include.locals.vpc_cidr, 3, 1)]

@@ -46,6 +46,7 @@
   - Prometheus stack is not deployed in this case, so all `ServiceMonitor` resources are disabled in the Helm releases. Usually I tend to deploy it from `ArgoCD`
 - The image is not actually being uploaded to ECR, so I keep only a placeholder in the `Makefile` to represent how it would work and I use a Docker HUB image during the deployment
 - I don't have an account where I can test that the code actually works, so I am only testing Terragrunt `init` and `plan` commands
+- Added S3 backend generator at main `terragunt.hcl` as an example, but commented it because I don't have where to create the S3 bucket and the required DynamoDB table for the state lock
 
 ## Application details
 
