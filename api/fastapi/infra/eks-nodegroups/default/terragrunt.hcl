@@ -11,7 +11,7 @@ dependency "eks" {
   config_path                             = "${get_terragrunt_dir()}/../../eks"
   mock_outputs_allowed_terraform_commands = ["init", "validate", "plan", "terragrunt-info"]
   mock_outputs = {
-    cluster_primary_security_group_id = "mocked-eks-cluster-primary-security-group-id"
+    iam_role_arn = "mocked-iam-role-arn"
   }
 }
 

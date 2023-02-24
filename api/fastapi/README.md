@@ -38,7 +38,9 @@
 - Defined some local variables, but in real life environments some changes need to be made
   - Create different folder structure per environment, region, project, ...
   - Manage specific variables at folders level, like the name of the environment or the region
-- Created a small local module in `infra/modules` to get the credentials `helm` provider needs to connect to the cluster
+- Created helper modules in `infra/modules`
+  - `eks-data` to get the credentials `helm` provider needs to connect to the cluster
+  - `aws-azs` to get the number of desired availability zones for the region
 - All required IAM roles and policies are created in `iam` folder. All of them adapted to OIDC authentication in EKS
 - As mentioned in the comments, here we install everything from `helm` provider, but in real life environments I would change some things
   - Deploy `ArgoCD`, pointing to a repository where all required components are defined, overridding the needed values for different environments
@@ -47,6 +49,7 @@
 - The image is not actually being uploaded to ECR, so I keep only a placeholder in the `Makefile` to represent how it would work and I use a Docker HUB image during the deployment
 - I don't have an account where I can test that the code actually works, so I am only testing Terragrunt `init` and `plan` commands
 - Added S3 backend generator at main `terragunt.hcl` as an example, but commented it because I don't have where to create the S3 bucket and the required DynamoDB table for the state lock
+- I created a ECR repository manually in the code, but a `Lambda` function can be defined to create them based on `Eventbridge` events
 
 ## Application details
 
