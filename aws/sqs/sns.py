@@ -13,12 +13,13 @@ def sns_publish(topic_arn, message):
 localstack = os.environ.get('LOCALSTACK', 'true')
 sqs_queue_name = os.environ.get('SQS_QUEUE_NAME', 'test-queue')
 sns_topic_arn = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:eu-central-1:000000000000:test-topic')
+endpoint_url = os.environ.get('ENDPOINT_URL', 'http://localhost:4566')
 
 # Create Boto session and client using localstack endpoint
 session = boto3.Session()
 if localstack == 'true':
   print("Using localstack")
-  sns = session.client('sns', endpoint_url='http://localhost:4566')
+  sns = session.client('sns', endpoint_url=endpoint_url)
 else:
   sns = session.client('sns')
 
