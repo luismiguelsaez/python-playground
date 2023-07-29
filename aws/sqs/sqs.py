@@ -1,12 +1,7 @@
 import boto3
 import os
 from time import sleep
-
-def sns_publish(topic_arn, message):
-  response = sns.publish(
-    TopicArn=topic_arn,
-    Message=message
-  )
+from datetime import datetime
 
 def sqs_read(queue_url):
   response = sqs.receive_message(
@@ -28,7 +23,7 @@ def sqs_read(queue_url):
     print("No messages in queue")
 
 # Read environment variable to check if localstack is running
-localstack = os.environ.get('LOCALSTACK')
+localstack = os.environ.get('LOCALSTACK', 'true')
 sqs_queue_name = os.environ.get('SQS_QUEUE_NAME', 'test-queue')
 sns_topic_arn = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:eu-central-1:000000000000:test-topic')
 
@@ -50,14 +45,6 @@ except sqs.exceptions.QueueNameExists:
 else:
   print(queue['ResponseMetadata']['HTTPStatusCode'], queue['QueueUrl'])
 
-# Create SNS topic
-try:
-    topic = sns.create_topic(Name='test-topic')
-except sns.exceptions.TopicNameExists:
-    print("Topic test-topic already exists")
-else:
-  print(topic['ResponseMetadata']['HTTPStatusCode'], topic['TopicArn'])
-
 # Subscribe the queue to the SNS topic
 queue_arn = sqs.get_queue_attributes(
     QueueUrl=queue['QueueUrl'],
@@ -74,8 +61,9 @@ subscription = sns.subscribe(
 # Poll the queue for messages
 while True:
     
-    # Publish a message to the SNS topic
-    sns_publish(sns_topic_arn, "Hello world!")
+    # Get current date and time
+    now = datetime.now()
+    current_time = now.strftime("%Y%m%d:%H:%M:%S")
 
     # Read the message from the queue
     sqs_read(queue['QueueUrl'])
