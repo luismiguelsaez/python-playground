@@ -8,6 +8,7 @@ def sns_publish(topic_arn, message):
     TopicArn=topic_arn,
     Message=message
   )
+  print(response['ResponseMetadata']['HTTPStatusCode'], response['MessageId'])
 
 # Read environment variable to check if localstack is running
 localstack = os.environ.get('LOCALSTACK', 'true')
