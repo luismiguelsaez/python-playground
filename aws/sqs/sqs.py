@@ -27,6 +27,10 @@ localstack = os.environ.get('LOCALSTACK', 'true')
 sqs_queue_name = os.environ.get('SQS_QUEUE_NAME', 'test-queue')
 sns_topic_arn = os.environ.get('SNS_TOPIC_ARN', 'arn:aws:sns:eu-central-1:000000000000:test-topic')
 endpoint_url = os.environ.get('ENDPOINT_URL', 'http://localhost:4566')
+debug = os.environ.get('DEBUG', 'false')
+
+if debug == 'true':
+  boto3.set_stream_logger('', logging.DEBUG)
 
 # Create Boto session and client using localstack endpoint
 session = boto3.Session()
