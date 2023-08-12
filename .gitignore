@@ -1,4 +1,6 @@
 **/cdk.out
-**/.venv
+**/*venv
 
 **/.terragrunt-cache
+
+**/__pycache__
