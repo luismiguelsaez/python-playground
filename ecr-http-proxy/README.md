@@ -17,6 +17,4 @@ import boto3
 
 session = boto3.Session(profile_name='lokalise-admin-prod')
 client = session.client("ecr")
-
-
 ```

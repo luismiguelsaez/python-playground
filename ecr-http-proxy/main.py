@@ -5,14 +5,21 @@ from fastapi.responses import Response
 from os import environ
 from datetime import datetime
 from pytz import timezone
+import logging
+from sys import stdout
 
 aws_access_key_id = environ.get('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = environ.get('AWS_SECRET_ACCESS_KEY')
 aws_account_id = environ.get('AWS_ACCOUNT_ID')
 aws_region = environ.get('AWS_REGION')
+logger_level = environ.get('LOG_LEVEL', 'INFO')
 
 UPSTREAM_HOST = f'{aws_account_id}.dkr.ecr.{aws_region}.amazonaws.com'
 UPSTREAM_PROTO = 'https'
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logger_level)
+logger.addHandler(logging.StreamHandler(stdout))
 
 session = boto3.Session(
     aws_access_key_id=aws_access_key_id,
@@ -38,10 +45,12 @@ app = FastAPI()
 def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_token_expiration=ecr_token_expiration):
     
     ecr_token_expiration_offset_aware = ecr_token_expiration.replace(tzinfo=timezone('UTC'))
-    if ecr_token_expiration_offset_aware < datetime.now(tz=timezone('UTC')):
+    current_date = datetime.now(tz=timezone('UTC'))
+    if ecr_token_expiration_offset_aware < current_date:
+        logger.info(f"ECR token expired ({ecr_token_expiration_offset_aware} < {current_date}), getting new token")
         ecr_token, ecr_token_expiration = get_ecr_token()
-
-    print("Original request headers: ", request.headers)
+    else:
+        logger.debug(f"ECR token is still valid ({ecr_token_expiration_offset_aware} > {current_date})")
 
     upstream_request_headers = {}
     upstream_request_headers['Authorization'] = 'Basic ' + ecr_token
@@ -50,14 +59,15 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     upstream_request_headers['X-Forwarded-For'] = request.client.host
     upstream_request_headers['X-Forwarded-Proto'] = request.url.scheme
 
-    print("Upstream request headers: ", upstream_request_headers)
-
     upstream_response = requests.request(
         method=request.method,
         url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}',
         headers=upstream_request_headers
     )
-
-    print("Upstream response headers: ", upstream_response.headers)
+    
+    if upstream_response.status_code == 200:
+        logger.debug(f"Upstream response valid [{upstream_response.status_code}]")
+    else:
+        logger.error(f"Upstream response invalid [{upstream_response.status_code}]: {upstream_response.content}")
 
     return Response(status_code=upstream_response.status_code, content=upstream_response.content, headers=upstream_response.headers)
