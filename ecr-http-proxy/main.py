@@ -59,12 +59,14 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     upstream_request_headers['X-Forwarded-For'] = request.client.host
     upstream_request_headers['X-Forwarded-Proto'] = request.url.scheme
 
+    logger.info(f"Upstream request: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
+
     upstream_response = requests.request(
         method=request.method,
         url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}',
         headers=upstream_request_headers
     )
-    
+
     if upstream_response.status_code == 200:
         logger.debug(f"Upstream response valid [{upstream_response.status_code}]")
     else:
