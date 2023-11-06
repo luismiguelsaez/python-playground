@@ -3,6 +3,8 @@ import requests
 from fastapi import FastAPI, Request
 from fastapi.responses import Response
 from os import environ
+from datetime import datetime
+from pytz import timezone
 
 aws_access_key_id = environ.get('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = environ.get('AWS_SECRET_ACCESS_KEY')
@@ -18,22 +20,32 @@ session = boto3.Session(
     region_name=aws_region
 )
 
-client = session.client('ecr')
+def get_ecr_token():
+    
+    client = session.client('ecr')
 
-# Get auth token
-auth = client.get_authorization_token()
-token = auth['authorizationData'][0]['authorizationToken']
+    auth = client.get_authorization_token()
+    token = auth['authorizationData'][0]['authorizationToken']
+    token_expiration = auth['authorizationData'][0]['expiresAt']
+    
+    return token, token_expiration
+
+ecr_token, ecr_token_expiration = get_ecr_token()
 
 app = FastAPI()
 
 @app.api_route('/v2/{registry_path:path}', methods=['GET', 'HEAD'])
-def registry_get(registry_path: str, request: Request):
+def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_token_expiration=ecr_token_expiration):
     
+    ecr_token_expiration_offset_aware = ecr_token_expiration.replace(tzinfo=timezone('UTC'))
+    if ecr_token_expiration_offset_aware < datetime.now(tz=timezone('UTC')):
+        ecr_token, ecr_token_expiration = get_ecr_token()
+
     print("Original request headers: ", request.headers)
 
     upstream_request_headers = {}
-    upstream_request_headers['Authorization'] = 'Basic ' + token
-    upstream_request_headers['X-Forwarded-User'] = 'Basic ' + token
+    upstream_request_headers['Authorization'] = 'Basic ' + ecr_token
+    upstream_request_headers['X-Forwarded-User'] = 'Basic ' + ecr_token
     upstream_request_headers['X-Real-IP'] = request.client.host
     upstream_request_headers['X-Forwarded-For'] = request.client.host
     upstream_request_headers['X-Forwarded-Proto'] = request.url.scheme
