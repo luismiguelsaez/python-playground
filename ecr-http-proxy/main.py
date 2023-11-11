@@ -18,8 +18,11 @@ UPSTREAM_HOST = f'{aws_account_id}.dkr.ecr.{aws_region}.amazonaws.com'
 UPSTREAM_PROTO = 'https'
 
 logger = logging.getLogger(__name__)
+stdout_handler = logging.StreamHandler(stdout)
+stdout_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+stdout_handler.setFormatter(stdout_formatter)
 logger.setLevel(logger_level)
-logger.addHandler(logging.StreamHandler(stdout))
+logger.addHandler(stdout_handler)
 
 session = boto3.Session(
     aws_access_key_id=aws_access_key_id,
