@@ -80,7 +80,7 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     upstream_response_content = None
 
     # Match only blobs requests ' /v2/autopilot/backend-workspace/blobs'
-    if re.match(r'^.*/blobs/sha256:[a-f0-9]{64}$', registry_path):
+    if re.match(r'^.*/blobs/sha256.*$', registry_path):
 
         logger.debug(f"Writing upstream response to file: {buffer_path}{file_name}")
 
