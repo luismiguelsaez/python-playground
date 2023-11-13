@@ -76,6 +76,7 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     file_hash.update(str(randint(0,10000000)).encode())
     file_name = file_hash.hexdigest()
 
+    upstream_response = requests.Response()
     upstream_response_content = None
 
     # Match only blobs requests ' /v2/autopilot/backend-workspace/blobs'
