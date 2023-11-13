@@ -82,7 +82,7 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     # Match only blobs requests ' /v2/autopilot/backend-workspace/blobs'
     if re.match(r'^.*/blobs/sha256.*$', registry_path):
 
-        logger.debug(f"Writing upstream response to file: {buffer_path}{file_name}")
+        logger.info(f"Getting upstream response [file:{buffer_path}{file_name}] - [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
 
         # Store response to disk
         try:
@@ -108,6 +108,9 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
             logger.error(f"Error reading file: {buffer_path}{file_name}: {e}")
 
     else:
+        
+        logger.info(f"Getting upstream response [memory] - [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
+
         upstream_response = requests.request(
             method=request.method,
             url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}',
