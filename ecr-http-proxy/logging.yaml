@@ -28,7 +28,7 @@ loggers:
       - access
     propagate: no
 root:
-  level: INFO
+  level: ERROR
   handlers:
     - default
   propagate: no

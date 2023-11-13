@@ -75,12 +75,11 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     file_hash.update(str(randint(0,10000000)).encode())
     file_name = file_hash.hexdigest()
 
-    logger.info(f"Writing upstream response to file: {buffer_path}{file_name}")
+    logger.debug(f"Writing upstream response to file: {buffer_path}{file_name}")
 
     # Store response to disk
     try:
         with requests.request(method=request.method, url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}', headers=upstream_request_headers, stream=True) as r:
-            r.raise_for_status()
             with open(f"{buffer_path}{file_name}", 'wb') as f:
                 for chunk in r.iter_content(chunk_size=8192):
                     bytes=f.write(chunk)
@@ -98,14 +97,14 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     #else:
     #    logger.error(f"Upstream response invalid [{upstream_response.status_code}]: {upstream_response.content}")
 
-    logger.info(f"Reading client response from file: {buffer_path}{file_name}")
+    logger.debug(f"Reading client response from file: {buffer_path}{file_name}")
 
     # Retrieve response from disk
     try:
         with open(f"{buffer_path}{file_name}", 'rb') as f:
             file_content = f.read()
             if os.path.exists(f"{buffer_path}{file_name}"):
-                logger.info(f"Removing file from disk: {buffer_path}{file_name}")
+                logger.debug(f"Removing file from disk: {buffer_path}{file_name}")
                 remove(f"{buffer_path}{file_name}")
             else:
                 logger.error(f"File not found: {buffer_path}{file_name}")
