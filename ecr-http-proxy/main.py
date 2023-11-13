@@ -10,6 +10,7 @@ import logging
 from sys import stdout
 import hashlib
 from random import randint
+import re
 
 aws_access_key_id = environ.get('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = environ.get('AWS_SECRET_ACCESS_KEY')
@@ -75,41 +76,45 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     file_hash.update(str(randint(0,10000000)).encode())
     file_name = file_hash.hexdigest()
 
-    logger.debug(f"Writing upstream response to file: {buffer_path}{file_name}")
+    upstream_response_content = None
 
-    # Store response to disk
-    try:
-        with requests.request(method=request.method, url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}', headers=upstream_request_headers, stream=True) as r:
-            with open(f"{buffer_path}{file_name}", 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
-                    bytes=f.write(chunk)
-    except Exception as e:
-        logger.error(f"Error writing file: {buffer_path}{file_name}: {e}")
+    # Match only blobs requests ' /v2/autopilot/backend-workspace/blobs'
+    if re.match(r'^.*/blobs/sha256:[a-f0-9]{64}$', registry_path):
 
-    #upstream_response = requests.request(
-    #    method=request.method,
-    #    url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}',
-    #    headers=upstream_request_headers
-    #)
+        logger.debug(f"Writing upstream response to file: {buffer_path}{file_name}")
 
-    #if upstream_response.status_code == 200:
-    #    logger.debug(f"Upstream response valid [{upstream_response.status_code}]")
-    #else:
-    #    logger.error(f"Upstream response invalid [{upstream_response.status_code}]: {upstream_response.content}")
+        # Store response to disk
+        try:
+            with requests.request(method=request.method, url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}', headers=upstream_request_headers, stream=True) as upstream_response:
+                with open(f"{buffer_path}{file_name}", 'wb') as f:
+                    for chunk in upstream_response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+        except Exception as e:
+            logger.error(f"Error writing file: {buffer_path}{file_name}: {e}")
 
-    logger.debug(f"Reading client response from file: {buffer_path}{file_name}")
+        logger.debug(f"Reading client response from file: {buffer_path}{file_name}")
 
-    # Retrieve response from disk
-    try:
-        with open(f"{buffer_path}{file_name}", 'rb') as f:
-            file_content = f.read()
-            if os.path.exists(f"{buffer_path}{file_name}"):
-                logger.debug(f"Removing file from disk: {buffer_path}{file_name}")
-                remove(f"{buffer_path}{file_name}")
-            else:
-                logger.error(f"File not found: {buffer_path}{file_name}")
-    except Exception as e:
-        logger.error(f"Error reading file: {buffer_path}{file_name}: {e}")
+        # Retrieve response from disk
+        try:
+            with open(f"{buffer_path}{file_name}", 'rb') as f:
+                upstream_response_content = f.read()
+                if os.path.exists(f"{buffer_path}{file_name}"):
+                    logger.debug(f"Removing file from disk: {buffer_path}{file_name}")
+                    remove(f"{buffer_path}{file_name}")
+                else:
+                    logger.error(f"File not found: {buffer_path}{file_name}")
+        except Exception as e:
+            logger.error(f"Error reading file: {buffer_path}{file_name}: {e}")
 
-    #return Response(status_code=upstream_response.status_code, content=upstream_response.content, headers=upstream_response.headers)
-    return Response(status_code=r.status_code, content=file_content, headers=r.headers)
+    else:
+        upstream_response = requests.request(
+            method=request.method,
+            url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}',
+            headers=upstream_request_headers
+        )
+
+        upstream_response_content = upstream_response.content
+
+    
+    return Response(status_code=upstream_response.status_code, content=upstream_response_content, headers=upstream_response.headers)
+
