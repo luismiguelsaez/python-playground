@@ -67,7 +67,7 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     upstream_request_headers['X-Forwarded-For'] = request.client.host
     upstream_request_headers['X-Forwarded-Proto'] = request.url.scheme
 
-    logger.info(f"Upstream request: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
+    logger.debug(f"Upstream request: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
 
     file_hash = hashlib.sha256()
     file_hash.update(str.encode(request.client.host))
