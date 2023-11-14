@@ -2,7 +2,7 @@ import os
 import boto3
 import requests
 from fastapi import FastAPI, Request
-from fastapi.responses import Response, StreamingResponse
+from fastapi.responses import Response
 from os import environ, remove, path
 from datetime import datetime
 from pytz import timezone
@@ -67,34 +67,58 @@ def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_
     upstream_request_headers['X-Forwarded-For'] = request.client.host
     upstream_request_headers['X-Forwarded-Proto'] = request.url.scheme
 
-    logger.info(f"Upstream request: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
+    logger.debug(f"Upstream request: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
 
-    try:
-        response = requests.request(
+    file_hash = hashlib.sha256()
+    file_hash.update(str.encode(request.client.host))
+    file_hash.update(str.encode(registry_path))
+    file_hash.update(str.encode(request.method))
+    file_hash.update(str(randint(0,10000000)).encode())
+    file_name = file_hash.hexdigest()
+
+    upstream_response = requests.Response()
+    upstream_response_content = None
+
+    # Match only blobs requests ' /v2/autopilot/backend-workspace/blobs'
+    if re.match(r'^.*/blobs/sha256.*$', registry_path):
+
+        logger.info(f"Getting upstream response [file:{buffer_path}{file_name}] - [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
+
+        # Store response to disk
+        try:
+            with requests.request(method=request.method, url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}', headers=upstream_request_headers, stream=True) as upstream_response:
+                with open(f"{buffer_path}{file_name}", 'wb') as f:
+                    for chunk in upstream_response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+        except Exception as e:
+            logger.error(f"Error writing file: {buffer_path}{file_name}: {e}")
+
+        logger.debug(f"Reading client response from file: {buffer_path}{file_name}")
+
+        # Retrieve response from disk
+        try:
+            with open(f"{buffer_path}{file_name}", 'rb') as f:
+                upstream_response_content = f.read()
+                if os.path.exists(f"{buffer_path}{file_name}"):
+                    logger.debug(f"Removing file from disk: {buffer_path}{file_name}")
+                    remove(f"{buffer_path}{file_name}")
+                else:
+                    logger.error(f"File not found: {buffer_path}{file_name}")
+        except Exception as e:
+            logger.error(f"Error reading file: {buffer_path}{file_name}: {e}")
+
+    else:
+        
+        logger.info(f"Getting upstream response [memory] - [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}")
+
+        upstream_response = requests.request(
             method=request.method,
             url=f'{UPSTREAM_PROTO}://{UPSTREAM_HOST}/v2/{registry_path}',
-            headers=upstream_request_headers,
-            stream=True,
-            verify=True
+            headers=upstream_request_headers
         )
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Upstream request failed: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}: {e}")
-    except Exception as e:
-        logger.error(f"General exception during upstream request: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {request.method} - /v2/{registry_path}: {e}")
 
-    logger.info(f"Upstream response: [{UPSTREAM_PROTO}://{UPSTREAM_HOST}] - {response.status_code} - /v2/{registry_path}")
+        upstream_response_content = upstream_response.content
 
-    def generate_content_stream():
-        for chunk in response.iter_content(chunk_size=8192):
-            yield chunk
+    
+    return Response(status_code=upstream_response.status_code, content=upstream_response_content, headers=upstream_response.headers)
 
-    logger.debug(f"Streaming response to the client: [{request.client.host}] - {response.status_code} - /v2/{registry_path}")
-
-    try:
-        return StreamingResponse(
-            status_code=response.status_code,
-            content=generate_content_stream(),
-            headers=response.headers
-        )
-    except Exception as e:
-        logger.error(f"Error streaming response to client: [{request.client.host}] - {response.status_code} - /v2/{registry_path}: {e}")
