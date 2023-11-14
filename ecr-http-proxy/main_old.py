@@ -49,6 +49,10 @@ ecr_token, ecr_token_expiration = get_ecr_token()
 
 app = FastAPI()
 
+@app.api_route('/health', methods=['GET'])
+def health():
+    return Response(status_code=200, content='OK')
+
 @app.api_route('/v2/{registry_path:path}', methods=['GET', 'HEAD'])
 def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_token_expiration=ecr_token_expiration):
     
