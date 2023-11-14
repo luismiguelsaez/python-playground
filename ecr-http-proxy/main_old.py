@@ -11,6 +11,7 @@ from sys import stdout
 import hashlib
 from random import randint
 import re
+import httpx
 
 aws_access_key_id = environ.get('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = environ.get('AWS_SECRET_ACCESS_KEY')
