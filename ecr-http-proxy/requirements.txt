@@ -4,3 +4,4 @@ requests==2.31.0
 fastapi==0.92.0
 uvicorn[standard]==0.20.0
 pytz
+httpx==0.25.1

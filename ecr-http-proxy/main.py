@@ -8,9 +8,6 @@ from datetime import datetime
 from pytz import timezone
 import logging
 from sys import stdout
-import hashlib
-from random import randint
-import re
 
 aws_access_key_id = environ.get('AWS_ACCESS_KEY_ID')
 aws_secret_access_key = environ.get('AWS_SECRET_ACCESS_KEY')
@@ -49,7 +46,7 @@ ecr_token, ecr_token_expiration = get_ecr_token()
 
 app = FastAPI()
 
-@app.api_route('/v2/{registry_path:path}', methods=['GET', 'HEAD'])
+@app.api_route('/v2/{registry_path:path}', methods=['GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'])
 def registry_get(registry_path: str, request: Request, ecr_token=ecr_token, ecr_token_expiration=ecr_token_expiration):
     
     ecr_token_expiration_offset_aware = ecr_token_expiration.replace(tzinfo=timezone('UTC'))
