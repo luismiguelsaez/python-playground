@@ -1,5 +1,12 @@
 import re
 
+def pow(nums: list[int]):
+    if len(nums) == 1:
+        return nums[0]
+    if len(nums) < 3:
+        return nums[0] * nums[1]
+    return pow([nums[0] * nums[1], nums[2]])
+
 lines = [ l.rstrip() for l in open('input.txt', 'r').readlines() ]
 
 threshold = {'red':12,'green': 13,'blue': 14}
