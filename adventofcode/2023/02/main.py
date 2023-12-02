@@ -13,7 +13,7 @@ for line in lines:
     game = match_game.groups()[0]
     reveals = match_game.groups()[1]
 
-    print(f"- {game} - {line}")
+    #print(f"- {game} - {line}")
     game_wrong = False
     for reveal in reveals.split('; '):
         for set in reveal.split(', '):
@@ -28,7 +28,7 @@ for line in lines:
         sum += int(game)
     line_power = color_max['red'] * color_max['green'] * color_max['blue']
     power_sum += line_power
-    print(f" - {color_max} - {line_power}")
+    #print(f" - {color_max} - {line_power}")
 
 print(f"Part one: {sum}")
 print(f"Part two: {power_sum}")
