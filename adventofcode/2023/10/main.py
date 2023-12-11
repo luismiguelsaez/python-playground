@@ -1,5 +1,4 @@
 from sys import argv
-from time import sleep
 
 grid = [list(r.rstrip()) for r in open(argv[1], 'r').readlines()]
 
