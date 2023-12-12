@@ -57,3 +57,28 @@ while len(queue) > 0:
             visited.append(cur_coord)
 
 print(f"Part one: {round(len(set(visited)) / 2)}")
+
+count_tiles = 0
+for r in range(len(grid)):
+    tiles = []
+    tile = {'start': -1, 'end': -1}
+    for c in range(len(grid[r])):
+        if grid[r][c] == '.':
+            if tile['start'] == -1:
+                tile['start'] = c
+            if c == len(grid[r]) - 1:
+                tile['end'] = c
+                print(f"{r} {['.' for _ in range(tile['start'], tile['end'] + 1)]}")
+                # check if it is enclosed
+                tiles.append(tile)
+                tile = {'start': -1, 'end': -1}
+        else:
+            if tile['start'] != -1:
+                tile['end'] = c - 1
+                print(f"{r} {['.' for _ in range(tile['start'], tile['end'] + 1)]}")
+                # check if it is enclosed
+                tiles.append(tile)
+                tile = {'start': -1, 'end': -1}
+    #print(f"{r} - {tiles}")
+
+print(f"Part two: {count_tiles}")
