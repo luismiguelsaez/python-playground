@@ -1,6 +1,5 @@
 from sys import argv
 from itertools import combinations
-from ray.util.multiprocessing import Pool
 
 ## Part 1
 grid = [list(r.rstrip()) for r in open(argv[1], 'r').readlines()]
