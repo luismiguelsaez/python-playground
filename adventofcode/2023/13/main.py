@@ -13,7 +13,8 @@ def scan(grid):
                 total += r + 1
     return total
 
-def scan_replace(grid):
+def scan_replace(grid_orig):
+    grid = grid_orig.copy()
     for repeat in range(2):
         total = 0
         for r in range(0, len(grid) - 1):
@@ -26,10 +27,12 @@ def scan_replace(grid):
                 else:
                     if repeat == 0:
                         diff = [i for i in range(len(grid[u])) if grid[u][i] != grid[d][i]]
-                        idx = diff[0]
-                        print(f"Set grid rows {u} and {d} to '.' at index {idx}")
-                        grid[u][idx] = '.'
-                        grid[d][idx] = '.'
+                        if len(diff) == 1:
+                            idx = diff[0]
+                            print(f"Set grid rows {u} and {d} to '.' at index {idx}")
+                            grid[u][idx] = '.'
+                            grid[d][idx] = '.'
+                            for i in grid: print(*i)
 
     return total
 
@@ -49,11 +52,17 @@ def grid_process_replace(grid):
     total_horizontal = 0
     total_vertical = 0
 
+    print(f"Horizontal grid")
+    for i in grid: print(*i)
     total_horizontal = scan_replace(grid) * 100
+    print(f"Horizontal grid {total_horizontal}")
 
     columns = [[ grid[r][c] for r in range(len(grid) - 1, -1, -1) ] for c in range(len(grid[0]))]
 
+    print(f"Vertical grid")
+    for i in columns: print(*i)
     total_vertical = scan_replace(columns)
+    print(f"Vertical grid {total_vertical}")
 
     return total_horizontal + total_vertical
 
