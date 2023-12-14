@@ -99,5 +99,12 @@ for c in cycle(['up', 'left', 'down', 'right']):
     if count == 1_000_000_000:
         break
 
+total = 0
+for r in range(len(mod_grid)):
+    for c in range(len(mod_grid[0])):
+        if mod_grid[r][c] == 'O':
+            total += len(mod_grid) - r
 
 for r in grid: print(*r, sep='')
+
+print(f"Part two: {total}")
