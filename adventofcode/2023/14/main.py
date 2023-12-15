@@ -70,8 +70,14 @@ print(f"Part one: {total}")
 ## Part 2
 grid = [list(l.rstrip()) for l in open(argv[1], 'r').readlines()]
 
+cycles_start_repeat = -1
+cycles_repeat_hist = []
+grid_hash = hash(tuple([hash(tuple(r)) for r in grid]))
+grid_hashes = [grid_hash]
 mod_grid = copy.deepcopy(grid)
 count = 0
+cycles = 0
+calc_cycles = 0
 for c in cycle(['up', 'left', 'down', 'right']):
     match c:
         case 'up':
@@ -84,19 +90,46 @@ for c in cycle(['up', 'left', 'down', 'right']):
             move_rocks_right(mod_grid)
 
     count += 1
-    
-    # Print grid
-    os.system('clear')
-    for r in mod_grid: print(*r, sep='')
+    cycles += 1 if count % 4 == 0 else 0 
 
-    e = 0
-    for rm in range(len(mod_grid)):
-        if mod_grid[rm] == grid[rm]: e += 1
-    if e == len(mod_grid):
-        print(f"Cycle repeats at iteration {count}")
+    mod_grid_hash = hash(tuple([hash(tuple(r)) for r in mod_grid]))
+    if mod_grid_hash in grid_hashes:
+        if cycles_start_repeat == -1:
+            cycles_start_repeat = cycles
+            grid_hashes = []
+        else:
+            if len(cycles_repeat_hist) < 2:
+                cycles_repeat_hist.append(cycles)
+                grid_hashes = []
+            else:
+                calc_cycles = cycles_start_repeat + ( 1_000_000_000 - cycles_start_repeat ) % ( cycles_repeat_hist[1] - cycles_repeat_hist[0] )
+                #print(f"Cycles to solution: {calc_cycles}")
+                break
+
+    grid_hashes.append(mod_grid_hash)
+
+    #if cycles == 168: # Valid total
+    if cycles == 1_000_000_000:
         break
 
-    if count == 1_000_000_000:
+mod_grid = copy.deepcopy(grid)
+count = 0
+cycles = 0
+for c in cycle(['up', 'left', 'down', 'right']):
+    match c:
+        case 'up':
+            move_rocks_up(mod_grid)
+        case 'left':
+            move_rocks_left(mod_grid)
+        case 'down':
+            move_rocks_down(mod_grid)
+        case 'right':
+            move_rocks_right(mod_grid)
+
+    count += 1
+    cycles += 1 if count % 4 == 0 else 0
+
+    if cycles == calc_cycles:
         break
 
 total = 0
@@ -105,6 +138,7 @@ for r in range(len(mod_grid)):
         if mod_grid[r][c] == 'O':
             total += len(mod_grid) - r
 
-for r in grid: print(*r, sep='')
+# Print final grid
+#for r in grid: print(*r, sep='')
 
 print(f"Part two: {total}")
