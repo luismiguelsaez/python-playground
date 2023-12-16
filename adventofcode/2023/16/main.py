@@ -57,13 +57,9 @@ def calc_beams(s = Point((0, 0), (0, -1))):
             if (c.coord, c.parent) not in visited:
                 queue.insert(0, np)
         visited.append((c.coord, c.parent))
-        #print(f"{c.coord} is {grid[c.coord[0]][c.coord[1]]} <-> {d}: {[(p.coord[0], p.coord[1]) for p in n]}")
-        
+
         # Print
         grid_draw[c.coord[0]][c.coord[1]] = '#'
-        #for r in grid_draw:
-        #    print(*r)
-        #sleep(0.1)
 
     energized = 0
     for r in range(len(grid_draw)):
