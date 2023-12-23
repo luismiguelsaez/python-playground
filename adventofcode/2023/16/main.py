@@ -66,10 +66,11 @@ def calc_beams(s = Point((0, 0), (0, -1))):
         for c in range(len(grid_draw[r])):
             if grid_draw[r][c] == '#':
                 energized += 1
-    
+
     return energized
 
 print(f"Part one: {calc_beams(Point((0, 0), (0, -1)))}")
+
 
 starts = []
 for c in range(len(grid[0])):
