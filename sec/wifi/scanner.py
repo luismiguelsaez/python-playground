@@ -5,6 +5,7 @@ import time
 import os
 import subprocess
 from itertools import cycle
+from colorama import init, Fore, Back, Style
 
 def callback(packet):
     if packet.haslayer(Dot11):
@@ -20,22 +21,22 @@ def callback(packet):
 
             if packet.haslayer(Dot11AssoReq):
                 client_addr = packet.addr2
-                print(f"[Association Request] cli: {client_addr}, freq: {freq} ({channel}), signal: {signal}")
+                print(f"{Fore.BLUE}[Association Request] cli: {client_addr}, freq: {freq} ({channel}), signal: {signal}")
 
             if packet.haslayer(Dot11ReassoReq):
                 client_addr = packet.addr2
-                print(f"[Reassociation Request] cli: {client_addr}, freq: {freq} ({channel}), signal: {signal}")
+                print(f"{Fore.BLUE}[Reassociation Request] cli: {client_addr}, freq: {freq} ({channel}), signal: {signal}")
 
             if packet.haslayer(Dot11ProbeReq):
                 client_addr = packet.addr2
                 probe_req_ssid = packet[Dot11ProbeReq].info.decode()
-                print(f"Got [Probe Request] cli: {client_addr}, ssid: {probe_req_ssid}, freq: {freq} ({channel}), signal: {signal}")
+                print(f"{Style.DIM}[Probe Request] cli: {client_addr}, ssid: {probe_req_ssid}, freq: {freq} ({channel}), signal: {signal}")
 
             if packet.haslayer(Dot11ProbeResp):
                 bssid_addr = packet.addr2
                 client_addr = packet.addr1
                 probe_res_ssid = packet[Dot11ProbeResp].info.decode()
-                print(f"Got [Probe Response] bssid: {bssid_addr}, cli: {client_addr}, ssid: {probe_res_ssid}, freq: {freq} ({channel}), signal: {signal}")
+                print(f"{Style.DIM}[Probe Response] bssid: {bssid_addr}, cli: {client_addr}, ssid: {probe_res_ssid}, freq: {freq} ({channel}), signal: {signal}")
 
             if packet.haslayer(Dot11Beacon):
                 # extract the MAC address of the network
@@ -57,7 +58,7 @@ def callback(packet):
                 crypto = stats.get("crypto")
                 if ssid is not None:
                     if bssid not in networks.index:
-                        print(f"Got [Beacon] bssid: {bssid}, ssid: {ssid}, channel: {channel}, signal: {dbm_signal}, crypto: {crypto}")
+                        print(f"{Fore.RED}[Beacon] New AP bssid: {bssid}, ssid: {ssid}, channel: {channel}, signal: {dbm_signal}, crypto: {crypto}")
                     networks.loc[bssid] = (ssid, dbm_signal, channel, crypto)
 
 
@@ -110,8 +111,11 @@ channels = {
 }
 
 if __name__ == "__main__":
+    # Init colorama
+    init(autoreset=True)
+    # Set scan vars
     scan_iface = "wlan1"
-    scan_channels = range(1, 15)
+    scan_channels = [1]
     # Set monitor mode
     iface_set_monitor(scan_iface)
     # start the thread that prints all the networks
