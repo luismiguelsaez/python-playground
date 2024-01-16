@@ -15,6 +15,17 @@ def callback(packet):
             signal = packet[RadioTap].dBm_AntSignal
             client_addr = packet.addr2
 
+            # Capture management frames used from clients
+            #  -> AssociationRequest, ReassociationRequest, ProbeRequest
+
+            if packet.haslayer(Dot11AssoReq):
+                client_addr = packet.addr2
+                print(f"[Association Request] cli: {client_addr}, freq: {freq} ({channel}), signal: {signal}")
+
+            if packet.haslayer(Dot11ReassoReq):
+                client_addr = packet.addr2
+                print(f"[Reassociation Request] cli: {client_addr}, freq: {freq} ({channel}), signal: {signal}")
+
             if packet.haslayer(Dot11ProbeReq):
                 client_addr = packet.addr2
                 probe_req_ssid = packet[Dot11ProbeReq].info.decode()
