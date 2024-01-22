@@ -3,7 +3,6 @@ from threading import Thread
 import pandas
 import time
 import os
-import subprocess
 from itertools import cycle
 from colorama import init, Fore, Back, Style
 
