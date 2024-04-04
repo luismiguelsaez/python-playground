@@ -1,0 +1,38 @@
+from gpiozero import MotionSensor, TonalBuzzer
+from gpiozero.tones import Tone
+from time import sleep
+
+buzzer_pin = 2
+buzzer_frequency = 500
+motion_pin = 14
+motion_queue_length = 10
+motion_sample_rate = 10
+motion_threshold = 0.1
+loop_sleep_time = 0.5
+
+buzzer = TonalBuzzer(pin=buzzer_pin)
+motion = MotionSensor(pin=motion_pin, queue_len=motion_queue_length, sample_rate=motion_sample_rate, threshold=motion_threshold)
+
+tune = [('C#4', 0.2), ('D4', 0.2), (None, 0.2),
+        ('Eb4', 0.2), ('E4', 0.2), (None, 0.6),
+        ('F#4', 0.2), ('G4', 0.2), (None, 0.6),
+        ('Eb4', 0.2), ('E4', 0.2), (None, 0.2),
+        ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
+        ('C4', 0.2), ('B4', 0.2), (None, 0.2),
+        ('F#4', 0.2), ('G4', 0.2), (None, 0.2),
+        ('B4', 0.2), ('Bb4', 0.5), (None, 0.6),
+        ('A4', 0.2), ('G4', 0.2), ('E4', 0.2),
+        ('D4', 0.2), ('E4', 0.2)]
+
+def play_tune(tune: list = [])->None:
+    for note, duration in tune:
+        buzzer.play(note)
+        sleep(float(duration))
+    buzzer.stop()
+
+while True:
+    if motion.motion_detected:
+        print("Motion detected")
+        play_tune(tune)
+
+    sleep(loop_sleep_time)
