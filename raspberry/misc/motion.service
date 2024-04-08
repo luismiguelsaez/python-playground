@@ -1,0 +1,15 @@
+[Unit]
+Description=Python motion service
+After=network.target
+
+[Service]
+Environment=LOG_LEVEL=INFO
+User=pi
+Group=pi
+Type=simple
+Restart=always
+ExecStart=/usr/bin/python /home/pi/motion.py
+KillSignal=SIGKILL
+
+[Install]
+WantedBy=multi-user.target
