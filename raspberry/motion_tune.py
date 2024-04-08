@@ -2,7 +2,7 @@ from gpiozero import MotionSensor, TonalBuzzer
 from gpiozero.tones import Tone
 from time import sleep
 import logging
-from sys import stdout
+import threading
 import subprocess
 from datetime import datetime
 
@@ -47,7 +47,13 @@ def play_tune(tune: list = [])->None:
         sleep(float(duration))
     buzzer.stop()
 
-def capture_video(timeout_ms: int = 5000):
+def stream_video(port: int = 8888)->None:
+    subprocess.run(["libcamera-vid", "--timeout=0", "--inline", "--listen", f"--output=tcp://0.0.0.0:{port}"])
+
+def wait_video(filename: str)->None:
+    subprocess.run(["libcamera-vid", "--mode=640:480", "--initial=pause", "--signal=1", "--inline", "--timeout=0", "--split", f"--output={filename}"])
+
+def capture_video(timeout_ms: int = 5000)->str:
     ts = datetime.today().strftime("%Y%m%d-%H%M%S")
     file_name = f"/tmp/{ts}"
     file_ext = "h264"
@@ -66,10 +72,17 @@ def capture_video(timeout_ms: int = 5000):
         logger.debug(f"Converted video: {file_name}.{file_ext} > {file_name}.{file_ext_conv}")
     else:
         logger.error(f"Error converting video [{cmd_convert.returncode}]: {cmd_convert.stdout.decode()}")
+    
+    return f"{file_name}.{file_ext_conv}"
 
 while True:
+    thread_wait_video = threading.Thread(target=wait_video, args=["/tmp/rolling-video.h264"])
+    thread_wait_video.daemon = True
+    #thread_wait_video.start()
+
     if motion.motion_detected:
         logger.info(f"Motion detected")
-        play_tune(tune)
+        video_file = capture_video(timeout_ms=20000)
+        #play_tune(tune)
 
     sleep(loop_sleep_time)
