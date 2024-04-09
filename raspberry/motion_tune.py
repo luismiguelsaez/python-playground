@@ -1,4 +1,4 @@
-from gpiozero import MotionSensor, TonalBuzzer
+from gpiozero import MotionSensor, TonalBuzzer, LED
 from gpiozero.tones import Tone
 from time import sleep
 import logging
@@ -13,6 +13,8 @@ motion_pin = 14
 motion_queue_length = 10
 motion_sample_rate = 10
 motion_threshold = 0.1
+led_pin = 4
+led_time = 0.5
 loop_sleep_time = 0.5
 
 # Logging configuration
@@ -27,6 +29,7 @@ logger.setLevel(logging.DEBUG)
 logger.debug(f"Initializing objects: buzzer({buzzer_pin}), motionsensor({motion_pin})")
 buzzer = TonalBuzzer(pin=buzzer_pin)
 motion = MotionSensor(pin=motion_pin, queue_len=motion_queue_length, sample_rate=motion_sample_rate, threshold=motion_threshold)
+led = LED(pin=led_pin)
 
 tune =  [
             ('C#4', 0.2), ('D4', 0.2), (None, 0.2),
@@ -75,10 +78,19 @@ def capture_video(timeout_ms: int = 5000)->str:
     
     return f"{file_name}.{file_ext_conv}"
 
+def blink_led(t: float = 0.5):
+    while True:
+        led.on()
+        sleep(t)
+        led.off()
+        sleep(t)
+
 while True:
     thread_wait_video = threading.Thread(target=wait_video, args=["/tmp/rolling-video.h264"])
     thread_wait_video.daemon = True
     #thread_wait_video.start()
+    thread_led = threading.Thread(target=blink_led, args=[led_time])
+    thread_led.start()
 
     if motion.motion_detected:
         logger.info(f"Motion detected")
