@@ -85,13 +85,14 @@ def blink_led(t: float = 0.5):
         led.off()
         sleep(t)
 
-while True:
-    thread_wait_video = threading.Thread(target=wait_video, args=["/tmp/rolling-video.h264"])
-    thread_wait_video.daemon = True
-    #thread_wait_video.start()
-    thread_led = threading.Thread(target=blink_led, args=[led_time])
-    thread_led.start()
+thread_wait_video = threading.Thread(target=wait_video, args=["/tmp/rolling-video.h264"])
+thread_wait_video.daemon = True
+#thread_wait_video.start()
+thread_led = threading.Thread(target=blink_led, args=[led_time])
+thread_led.daemon = True
+thread_led.start()
 
+while True:
     if motion.motion_detected:
         logger.info(f"Motion detected")
         video_file = capture_video(timeout_ms=20000)
