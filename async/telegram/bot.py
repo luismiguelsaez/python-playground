@@ -3,8 +3,11 @@ import httpx
 import asyncio
 from time import sleep
 from os.path import exists
+from os import environ
 from sys import stdout
 
+
+bot_token = environ.get("BOT_TOKEN")
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -60,8 +63,6 @@ async def get_bot_ip() -> str:
 
 
 async def main():
-    bot_token = "7411509635:AAFjPhW1LJgPMNO0IbqeOW5gNdpWx42gZck"
-
     update_id = 0
     while True:
         logger.debug("Checking for updates")
