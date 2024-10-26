@@ -1,13 +1,16 @@
 import logging
 import httpx
 import asyncio
+from datetime import datetime
 from time import sleep
 from os.path import exists
 from os import environ
 from sys import stdout
+import cv2
 
 
-bot_token = environ.get("BOT_TOKEN")
+bot_token = environ.get("BOT_TOKEN", "dummy")
+camera = cv2.VideoCapture(0)
 
 logging.basicConfig(
     level=logging.ERROR,
@@ -24,6 +27,14 @@ formatter = logging.Formatter(
 )
 stream_handler.setFormatter(formatter)
 logger.addHandler(stream_handler)
+
+
+def capture_image(path: str = "/tmp/") -> str:
+    cap_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    cap_file = f"{path}cap-{cap_date}.jpg"
+    _, frame = camera.read()
+    cv2.imwrite(cap_file, frame)
+    return cap_file
 
 
 async def get_updates(token: str) -> dict:
@@ -50,7 +61,7 @@ async def send_photo(token: str, chat_id: int, file: str) -> tuple[int, str]:
             response = await client.post(
                 url=f"https://api.telegram.org/bot{token}/sendPhoto",
                 files=files,
-                data={"caption": "Pikachu", "chat_id": chat_id},
+                data={"chat_id": chat_id},
             )
 
     return response.status_code, response.text
@@ -87,6 +98,15 @@ async def main():
                         file="./pikachu.jpeg",
                     )
                     logger.debug(f"Photo result: {code} - {res}")
+                elif text == "/capture":
+                    logger.info("Handling /capture command")
+                    cap_file = capture_image()
+                    code, res = await send_photo(
+                        token=bot_token,
+                        chat_id=chat_id,
+                        file=cap_file,
+                    )
+                    logger.debug(f"Capture result: {code} - {res}")
 
         sleep(1)
 
