@@ -14,12 +14,13 @@ class Admin():
         self.__public_key = public_key
         self.__private_key = private_key
         self.__project_id = project_id
-
-    # Admin API methods
-    async def get_clusters(self) -> tuple[bool, dict]:
+   
+    # Base request
+    async def __request(self, path: str, method: str = 'GET') -> tuple[bool, dict]:
         async with httpx.AsyncClient() as client:
-            r = await client.get(
-                url=f'{self.__api_endpoint}{self.__api_base_path}/groups/{self.__project_id}/clusters',
+            r = await client.request(
+                method=method,
+                url=f'{self.__api_endpoint}{self.__api_base_path}/{path}',
                 auth=httpx.DigestAuth(self.__public_key, self.__private_key),
                 headers=self.__api_headers
             )
@@ -27,6 +28,10 @@ class Admin():
             return True, r.json()
         else:
             return False, { 'code': r.status_code, 'message': r.text }
+
+    # Admin API methods
+    async def get_clusters(self) -> tuple[bool, dict]:
+        return await self.__request(f'groups/{self.__project_id}/clusters')
 
 class Appservices():
     __api_appservices_endpoint = 'https://services.cloud.mongodb.com'
@@ -43,26 +48,12 @@ class Appservices():
         self.__appservices_token = None
         self.__appservices_refresh_token = None
 
-    # Appservices API methods
-    async def get_apps(self) -> tuple[bool, dict]:
-        await self.get_appservices_token()
+    # Base request
+    async def __request(self, path: str, method: str = 'GET') -> tuple[bool, dict]:
         async with httpx.AsyncClient() as client:
-            r = await client.get(
-                url=f'{self.__api_appservices_endpoint}{self.__api_appservices_base_path}/groups/{self.__project_id}/apps',
-                headers={
-                    'Authorization': f'Bearer {self.__appservices_token}'
-                }
-            )
-        if r.status_code == 200:
-            return True, r.json()
-        else:
-            return False, { 'code': r.status_code, 'message': r.text }
-
-    async def get_functions(self, app_id: str) -> tuple[bool, dict]:
-        await self.get_appservices_token()
-        async with httpx.AsyncClient() as client:
-            r = await client.get(
-                url=f'{self.__api_appservices_endpoint}{self.__api_appservices_base_path}/groups/{self.__project_id}/apps/{app_id}/functions',
+            r = await client.request(
+                method=method,
+                url=f'{self.__api_appservices_endpoint}{self.__api_appservices_base_path}/{path}',
                 headers={
                     'Authorization': f'Bearer {self.__appservices_token}'
                 }
@@ -95,6 +86,14 @@ class Appservices():
                     self.__appservices_token = r.json()["access_token"]
                     self.__appservices_refresh_token = r.json()["refresh_token"]
 
+    # Appservices API methods
+    async def get_apps(self) -> tuple[bool, dict]:
+        await self.get_appservices_token()
+        return await self.__request(f'groups/{self.__project_id}/apps')
+
+    async def get_functions(self, app_id: str) -> tuple[bool, dict]:
+        await self.get_appservices_token()
+        return await self.__request(f'groups/{self.__project_id}/apps/{app_id}/functions')
 
 async def main():
     atlas_admin = Admin(
