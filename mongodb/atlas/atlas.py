@@ -195,24 +195,24 @@ def create_app(
             "name": name,
             "provider_region": provider_region,
             "location": location,
-            "deployment_model": "GLOBAL",
+            "deployment_model": "LOCAL",
             "environment": "",
             # https://www.mongodb.com/docs/atlas/app-services/reference/template-apps/
             "template_id": template_id,
-            "data_source": {
-                "name": federated_db_name,
-                "type": "datalake",
-                "config": {
-                    "dataLakeName": "federated-default"
-                }
-            }
+            #"data_source": {
+            #    "name": federated_db_name,
+            #    "type": "datalake",
+            #    "config": {
+            #        "dataLakeName": "federated-default"
+            #    }
+            #}
         }
     )
 
-    if mdb_appservices_apps_req.status_code != 201:
-        return True, mdb_appservices_apps_req.json()['_id']
+    if mdb_appservices_apps_req.status_code == 201:
+        return True, mdb_appservices_apps_req.json()["_id"]
     else:
-        return False, f"Status code: {mdb_appservices_apps_req.status_code}, Error: {mdb_appservices_apps_req.json}"
+        return False, f"Status code: {mdb_appservices_apps_req.status_code}, Error: {mdb_appservices_apps_req.json()}"
 
 
 def get_app_id(token: str, project_id: str, name: str = "Triggers", product: str = "atlas")-> tuple[bool, str]:

@@ -1,7 +1,8 @@
 from sys import exit
 from aws import (
     get_parameter_by_path,
-    create_iam_role
+    create_iam_role,
+    create_s3_bucket
 )
 from atlas import (
     get_app_id,
@@ -18,7 +19,7 @@ from atlas import (
     create_cloud_provider_access_role,
     authorize_cloud_provider_access_role,
 )
-from dev import (
+from prod import (
     triggers,
     functions,
     AWS_PROFILE,
@@ -83,23 +84,45 @@ else:
         ]
     }
 
+    aws_iam_role_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": [
+                    "s3:ListBucket",
+                    "s3:GetObject",
+                    "s3:GetObjectVersion",
+                    "s3:GetBucketLocation",
+                    "s3:PutObject"
+                ],
+                "Resource": [
+                    f"arn:aws:s3:::{AWS_S3_BUCKET_NAME}",
+                    f"arn:aws:s3:::{AWS_S3_BUCKET_NAME}/*"
+                ]
+            }
+        ]
+    }
+
 res_create_role, output_create_role = create_iam_role(
-    role_name="atlas-data-lake-role",
+    role_name="mongodb-atlas-dwh",
     trust_policy=aws_iam_role_trust_policy,
-    aws_profile=AWS_PROFILE
+    aws_profile=AWS_PROFILE,
+    policy=aws_iam_role_policy
 )
 
 if not res_create_role:
     logger.error(f"Error creating IAM role: {output_create_role}")
     exit(1)
 else:
-    logger.info(f"IAM role created: {output_create_role}")
+    logger.info(f"IAM role created: {output_create_role} - {output_access_role}")
 
+logger.info(f"Authorizing IAM role: {output_create_role}")
 res_authorize_role, output_authorize_role = authorize_cloud_provider_access_role(
     mdb_public_key=mdb_public_key,
     mdb_private_key=mdb_private_key,
     project_id=MONGO_ATLAS_PROJECT_ID,
-    role_id=output_create_role,
+    role_id=output_access_role["role_id"],
     role_arn=output_create_role
 )
 
@@ -108,6 +131,20 @@ if not res_authorize_role:
     exit(1)
 else:
     logger.info(f"IAM role authorized: {output_authorize_role}")
+
+# Create S3 bucket
+res_create_bucket, output_create_bucket = create_s3_bucket(
+    bucket_name=AWS_S3_BUCKET_NAME,
+    region=AWS_REGION,
+    role_arn=output_create_role,
+    aws_profile=AWS_PROFILE
+)
+
+if not res_create_bucket:
+    logger.error(f"Error creating S3 bucket: {output_create_bucket}")
+    exit(1)
+else:
+    logger.info(f"S3 bucket created: {output_create_bucket}")
 
 # Create data federation
 res_data_federation, output_data_federation = create_data_federation_s3(
@@ -141,7 +178,6 @@ res, id = get_app_id(token=mdb_appservices_token, project_id=MONGO_ATLAS_PROJECT
 if res:
     mdb_appservices_triggers_app_id = id
 else:
-    logger.error(f"Error getting app ID: {id}: {id}")
     # Create triggers app
     res, app_id = create_app(
             token=mdb_appservices_token,
@@ -155,20 +191,20 @@ else:
         logger.error(f"Error creating app: {app_id}")
         exit(1)
 
-
+exit(0)
 # Link data sources
-res, output = create_application_datasource_links(
-    token=mdb_appservices_token,
-    project_id=MONGO_ATLAS_PROJECT_ID,
-    name=f"federated-{MONGO_ATLAS_FEDERATION_NAME}",
-    cluster_name=MONGO_ATLAS_FEDERATION_NAME,
-    app_id=mdb_appservices_triggers_app_id
-)
-if not res:
-    logger.error(f"Error creating application datasource link: {output}")
-    exit(1)
-else:
-    logger.info(f"Application datasource link created: {output}")
+#res, output = create_application_datasource_links(
+#    token=mdb_appservices_token,
+#    project_id=MONGO_ATLAS_PROJECT_ID,
+#    name=f"federated-{MONGO_ATLAS_FEDERATION_NAME}",
+#    cluster_name=MONGO_ATLAS_FEDERATION_NAME,
+#    app_id=mdb_appservices_triggers_app_id
+#)
+#if not res:
+#    logger.error(f"Error creating application datasource link: {output}")
+#    exit(1)
+#else:
+#    logger.info(f"Application datasource link created: {output}")
 
 # Create appservices functions
 for function in functions:
