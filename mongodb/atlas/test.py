@@ -257,7 +257,7 @@ async def main():
     services = [
         { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
         { 'type': 'mongodb-atlas', 'name': 'identity-prod-mongo01', 'cluster_name': 'identity-prod-mongo01' },
-        #{ 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
+        { 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
     ]
 
     # Create App
@@ -276,8 +276,8 @@ async def main():
         res_service, out_service = await task
         print(f"Service: {out_service}")
 
-    app_services = await atlas_appservices.get_app_services(app_id=out_app['_id'])
-    print(f"Services: {app_services}")
+    res_app_services, out_app_services = await atlas_appservices.get_app_services(app_id=out_app['_id'])
+    print(f"Services: {out_app_services}")
 
     # Link Data Sources
     data_sources = [ {'name': service['name'], 'type': service['type'], 'config': {'clusterName': service['cluster_name']}} for service in services ]
@@ -285,14 +285,13 @@ async def main():
     res_link_serivces, out_link_services = await atlas_appservices.create_app_service_link(app_id=out_app['_id'], data_sources=data_sources)
     print(f"Link Services: {out_link_services}")
 
-    exit(1)
     res_function, out_function = await atlas_appservices.create_app_function(
         app_id=out_app['_id'],
         name='Test',
         source='exports = function() { return "Hello World!"; }'
     )
 
-    print(f"Funciton: {out_function}")
+    print(f"Function: {out_function}")
 
     res_trigger, out_trigger = await atlas_appservices.create_app_trigger(
             trigger_name='Test',
@@ -300,7 +299,7 @@ async def main():
             operations=["INSERT", "UPDATE", "DELETE", "REPLACE"],
             database='customers',
             collection='Customer',
-            service_id=out_services[0]['_id'],
+            service_id=out_app_services[0]['_id'],
             function_id=out_function['_id'],
             type='DATABASE'
     )
