@@ -254,57 +254,117 @@ async def main():
             project_id=argv[3]
     )
 
-    services = [
-        { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
-        { 'type': 'mongodb-atlas', 'name': 'identity-prod-mongo01', 'cluster_name': 'identity-prod-mongo01' },
-        { 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
-    ]
+    services = {
+        'infra-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
+        'identity-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'identity-prod-mongo01', 'cluster_name': 'identity-prod-mongo01' },
+        'prod-dwh': { 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
+    }
+
+    # Each function name must match a trigger name
+    functions = {
+        'customer': { 'type': 'database', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
+        'invoice': { 'type': 'database', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'tenant': { 'type': 'database', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'shop': { 'type': 'database', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
+        'service_objects': { 'type': 'database', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
+
+        'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
+        'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'tenant-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'shop-to-s3': { 'type': 'scheduled', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
+        'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
+    }
+
+    # Each function name must match a trigger name
+    triggers = {
+        'customer': { 'type': 'DATABASE', 'name': 'customer', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'customers', 'collection': 'Customer', 'service': 'infra-prod-mongo01' },
+        'invoice': { 'type': 'DATABASE', 'name': 'invoice', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'invoices', 'collection': 'Invoice', 'service': 'infra-prod-mongo01' },
+        'tenant': { 'type': 'DATABASE', 'name': 'tenant', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'identity', 'collection': 'TenantDashboard', 'service': 'identity-prod-mongo01' },
+        'shop': { 'type': 'DATABASE', 'name': 'shop', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'identity', 'collection': 'ShopDashboard', 'service': 'identity-prod-mongo01' },
+        'service_objects': { 'type': 'DATABASE', 'name': 'service_objects', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'service-objects', 'collection': 'ServiceObject', 'service': 'infra-prod-mongo01' },
+
+        'customer-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'invoice-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'tenant-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'shop-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'service_objects-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
+    }
 
     # Create App
     res_app, out_app = await atlas_appservices.create_app(app_name='Triggers', cluster_name='infra-prod-mongo01')
-
+ 
     print(f"App: {out_app}")
+    exit(1) if not res_app else None
 
     # Create Services
     async with asyncio.TaskGroup() as tg:
-        tasks = [
-            tg.create_task(atlas_appservices.create_app_service(app_id=out_app['_id'], name=service['name'], cluster_name=service['cluster_name'], type=service['type']))
+        services_tasks = {
+            service: tg.create_task(atlas_appservices.create_app_service(app_id=out_app['_id'], name=services[service]['name'], cluster_name=services[service]['cluster_name'], type=services[service]['type']))
             for service in services
-        ]
+        }
 
-    for task in tasks:
-        res_service, out_service = await task
+    for task in services_tasks:
+        res_service, out_service = await services_tasks[task]
         print(f"Service: {out_service}")
+        exit(1) if not res_service else None
 
     res_app_services, out_app_services = await atlas_appservices.get_app_services(app_id=out_app['_id'])
-    print(f"Services: {out_app_services}")
+    print(f"App Services: {out_app_services}")
+    exit(1) if not res_app_services else None
 
     # Link Data Sources
-    data_sources = [ {'name': service['name'], 'type': service['type'], 'config': {'clusterName': service['cluster_name']}} for service in services ]
+    data_sources = [
+        {'name': services[service]['name'], 'type': services[service]['type'], 'config': {'clusterName': services[service]['cluster_name']}}
+        for service in services
+    ]
 
     res_link_serivces, out_link_services = await atlas_appservices.create_app_service_link(app_id=out_app['_id'], data_sources=data_sources)
     print(f"Link Services: {out_link_services}")
+    exit(1) if not res_link_serivces else None
 
-    res_function, out_function = await atlas_appservices.create_app_function(
-        app_id=out_app['_id'],
-        name='Test',
-        source='exports = function() { return "Hello World!"; }'
-    )
+    # Create Functions
+    async with asyncio.TaskGroup() as tg:
+        tasks_functions = {
+            function: tg.create_task(
+                atlas_appservices.create_app_function(app_id=out_app['_id'], name=function, source=open('functions/' + functions[function]['type'] + '-' + functions[function]['name'] + '.js').read())
+            )
+            for function in functions
+        }
+    for task in tasks_functions:
+        res_function, out_function = await tasks_functions[task]
+        print(f"Function [{task}]: {out_function}")
+        exit(1) if not res_function else None
 
-    print(f"Function: {out_function}")
-
-    res_trigger, out_trigger = await atlas_appservices.create_app_trigger(
-            trigger_name='Test',
-            app_id=out_app['_id'],
-            operations=["INSERT", "UPDATE", "DELETE", "REPLACE"],
-            database='customers',
-            collection='Customer',
-            service_id=out_app_services[0]['_id'],
-            function_id=out_function['_id'],
-            type='DATABASE'
-    )
-
-    print(f"Trigger: {out_trigger}")
+    # Create Triggers
+    async with asyncio.TaskGroup() as tg:
+        tasks_triggers_database = {
+            trigger: tg.create_task(atlas_appservices.create_app_trigger(
+                trigger_name=trigger,
+                app_id=out_app['_id'],
+                operations=triggers[trigger]['operations'],
+                database=triggers[trigger]['database'],
+                collection=triggers[trigger]['collection'],
+                service_id=services_tasks[triggers[trigger]['service']].result()[1]['_id'],
+                function_id=tasks_functions[trigger].result()[1]['_id'],
+                type=triggers[trigger]['type']
+            ))
+            for trigger in triggers if triggers[trigger]['type'] == 'DATABASE'
+        }
+        tasks_triggers_scheduled = {
+                trigger: tg.create_task(atlas_appservices.create_app_trigger(
+                    trigger_name=trigger,
+                    app_id=out_app['_id'],
+                    schedule=triggers[trigger]['schedule'],
+                    function_id=tasks_functions[trigger].result()[1]['_id'],
+                    type=triggers[trigger]['type']
+                ))
+                for trigger in triggers if triggers[trigger]['type'] == 'SCHEDULED'
+        }
+        tasks = {**tasks_triggers_database, **tasks_triggers_scheduled}
+    for task in tasks:
+        res_trigger, out_trigger = await tasks[task]
+        print(f"Trigger [{task}]: {out_trigger}")
+        exit(1) if not res_trigger else None
 
 if __name__ == '__main__':
     asyncio.run(main())
