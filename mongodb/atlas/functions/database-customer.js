@@ -1,0 +1,55 @@
+exports = async function(changeEvent) {
+  // Check if changeEvent is undefined
+  if (!changeEvent || changeEvent["$undefined"]) {
+    console.log("Error: changeEvent is undefined.");
+    return; // Exit if changeEvent is not defined
+  }
+
+  // Access the _id of the changed document
+  const docId = changeEvent.documentKey._id;
+
+  // Specify your service name (your MongoDB cluster)
+  const serviceName = "infra-prod-mongo01";
+  const federatedDbName = "customers";
+  const federatedCollectionName = "customer-updates";
+
+  // Log service and database details
+  console.log(`Connecting to service: ${serviceName}`);
+  console.log(`Targeting federated database: ${federatedDbName}`);
+  console.log(`Targeting federated collection: ${federatedCollectionName}`);
+
+  const federatedDb = context.services.get(serviceName).db(federatedDbName);
+  const federatedCollection = federatedDb.collection(federatedCollectionName);
+  
+  try {
+    // Handle insert operation
+    if (changeEvent.operationType === "insert") {
+      console.log("Upserting document:", JSON.stringify(changeEvent.fullDocument));
+      await federatedCollection.updateOne(
+        { _id: docId }, // Filter to find the document
+        { $set: changeEvent.fullDocument }, // Set the fields to the latest data
+        { upsert: true } // Insert if the document doesn't exist
+      );
+    } 
+    // Handle update or replace operation
+    else if (changeEvent.operationType === "update" || changeEvent.operationType === "replace") {
+      console.log("Upserting updated document:", JSON.stringify(changeEvent.fullDocument));
+      await federatedCollection.updateOne(
+        { _id: docId }, // Filter to find the document
+        { $set: changeEvent.fullDocument }, // Update the document with the latest data
+        { upsert: true } // Insert if the document doesn't exist
+      );
+    } 
+    // Handle delete operation
+    else if (changeEvent.operationType === "delete") {
+      console.log("Document deleted with _id:", docId);
+      await federatedCollection.updateOne(
+        { _id: docId }, // Filter to find the document
+        { $set: { deleted: true } }, // Mark as deleted
+        { upsert: true } // Insert if the document doesn't exist
+      );
+    }
+  } catch (err) {
+    console.log("Error performing operation: ", err.message);
+  }
+};

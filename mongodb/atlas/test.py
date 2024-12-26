@@ -37,6 +37,54 @@ class Admin():
             return res, { 'results': list(filter(lambda x: x['name'] == name, clusters['results'])) }
         return res, clusters
 
+    async def get_data_federations(self, name: None | str = None) -> tuple[bool, dict]:
+        res, datafederations = await self.__request(f'groups/{self.__project_id}/dataFederation')
+        if name != None:
+            return res, { 'results': list(filter(lambda x: x['name'] == name, datafederations)) }
+        return res, datafederations
+
+    async def get_cloud_provider_access(self, provider_name: None | str = None) -> tuple[bool, dict]:
+        res, providers = await self.__request(f'groups/{self.__project_id}/cloudProviderAccess')
+        key = ''
+        if provider_name == None:
+            return res, providers
+        elif provider_name not in ['AWS', 'AZURE']:
+            return False, { 'message': 'Invalid provider name' }
+        else:
+            if provider_name == 'AWS': key = 'awsIamRoles'
+            if provider_name == 'AZURE': key = 'azureServicePrincipals'
+            return res, providers[key]
+
+    async def create_data_federation(self, name: str, databases: list[dict], stores: list[dict], role_id: str, cloud_provider: str = 'AWS', test_bucket: str = '') -> tuple[bool, dict]:
+        res_federations, out_federations =  await self.get_data_federations()
+        filter_federations = list(filter(lambda x: x['name'] == name, out_federations))
+        if res_federations and len(filter_federations) > 0:
+            return True, filter_federations[0]
+        if cloud_provider not in ['AWS']:
+            return False, { 'message': 'Invalid or not implemented cloud provider' }
+        cloud_provider_config = {}
+        if cloud_provider == 'AWS':
+            cloud_provider_config = {
+                'aws': {
+                    'roleId': role_id,
+                    'testS3Bucket': test_bucket
+                }
+            }
+        return await self.__request(
+            f'groups/{self.__project_id}/dataFederation',
+            method='POST',
+            json={
+                'name': name,
+                'cloudProviderConfig': cloud_provider_config,
+                'storage': {
+                    'databases': databases,
+                    'stores': stores
+                },
+            },
+            expected_status=200
+        )
+
+
 class Appservices():
     __api_appservices_endpoint = 'https://services.cloud.mongodb.com'
     __api_appservices_base_path = '/api/admin/v3.0'
@@ -242,16 +290,24 @@ class Appservices():
 
 
 async def main():
+    public_key = argv[1]
+    private_key = argv[2]
+    project_id = argv[3]
+
+    if not public_key or not private_key or not project_id:
+        print("Usage: python test.py <public_key> <private_key> <project_id>")
+        exit(1)
+
     atlas_admin = Admin(
-            public_key=argv[1],
-            private_key=argv[2],
-            project_id=argv[3]
+            public_key=public_key,
+            private_key=private_key,
+            project_id=project_id
     )
 
     atlas_appservices = Appservices(
-            public_key=argv[1],
-            private_key=argv[2],
-            project_id=argv[3]
+            public_key=public_key,
+            private_key=private_key,
+            project_id=project_id
     )
 
     services = {
@@ -289,6 +345,157 @@ async def main():
         'shop-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
         'service_objects-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
     }
+
+    federation_databases = [
+        {
+            "name": "prod-dwh",
+            "views": [],
+            "collections": [
+                {
+                    "name": "customers",
+                    "dataSources": [
+                        {
+                            "collection": "customer-updates",
+                            "database": "customers",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-customers",
+                    "dataSources": [
+                        {
+                            "collection": "Customer",
+                            "database": "customers",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-invoices",
+                    "dataSources": [
+                        {
+                            "collection": "Invoice",
+                            "database": "invoices",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-tenants",
+                    "dataSources": [
+                        {
+                            "collection": "TenantDashboard",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-shops",
+                    "dataSources": [
+                        {
+                            "collection": "ShopDashboard",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "invoices",
+                    "dataSources": [
+                        {
+                            "collection": "invoice-updates",
+                            "database": "invoices",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "shops",
+                    "dataSources": [
+                        {
+                            "collection": "shop-updates",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "tenants",
+                    "dataSources": [
+                        {
+                            "collection": "tenant-updates",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-service-objects",
+                    "dataSources": [
+                        {
+                            "collection": "ServiceObject",
+                            "database": "service-objects",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "service-objects",
+                    "dataSources": [
+                        {
+                            "collection": "service-object-updates",
+                            "database": "service-objects",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                }
+            ],
+        }
+    ]
+    federation_stores = [
+        {
+            "clusterName": "infra-prod-mongo01",
+            "name": "prod-infra",
+            "projectId": project_id,
+            "provider": "atlas",
+            "readPreference": {
+                "mode": "secondary"
+            }
+        },
+        {
+            "clusterName": "identity-prod-mongo01",
+            "name": "prod-identity",
+            "projectId": project_id,
+            "provider": "atlas",
+            "readPreference": {
+                "mode": "secondary"
+            }
+        },
+        {
+            "bucket": "s3-steer-dwh-prod",
+            "delimiter": "/",
+            "name": "s3-steer-dwh-prod",
+            "provider": "s3",
+            "region": "us-east-2"
+        }
+    ]
+
+    # Get Cloud Providers
+    res_providers, out_providers = await atlas_admin.get_cloud_provider_access(provider_name='AWS')
+    print(f"Providers: {out_providers}")
+    exit(1) if not res_providers else None
+
+    res_data_federations, out_data_federations = await atlas_admin.create_data_federation(
+        name='prod-dwh',
+        databases=federation_databases,
+        stores=federation_stores,
+        role_id=out_providers[0]['roleId'],
+        test_bucket='s3-steer-dwh-prod'
+    )
+    print(f"Data Federations: {out_data_federations}")
+    exit(1) if not res_data_federations else None
 
     # Create App
     res_app, out_app = await atlas_appservices.create_app(app_name='Triggers', cluster_name='infra-prod-mongo01')
