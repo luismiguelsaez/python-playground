@@ -1,282 +1,291 @@
-from sys import exit
-from aws import (
-    get_parameter_by_path,
-    create_iam_role,
-    create_s3_bucket
-)
-from atlas import (
-    get_app_id,
-    get_appservices_token,
-    create_function,
-    create_trigger,
-    get_function_source_database,
-    get_function_source_scheduled,
-    create_data_federation_s3,
-    get_service_id,
-    get_function_id,
-    create_application_datasource_links,
-    create_app,
-    create_cloud_provider_access_role,
-    authorize_cloud_provider_access_role,
-)
-from prod import (
-    triggers,
-    functions,
-    AWS_PROFILE,
-    AWS_S3_BUCKET_NAME,
-    AWS_REGION,
-    AWS_SSM_PREFIX,
-    MONGO_ATLAS_ORG_ID,
-    MONGO_ATLAS_PROJECT_ID,
-    MONGO_ATLAS_FEDERATION_NAME,
-    MONGO_ATLAS_FEDERATED_DB_NAME,
-)
-import logging
-import sys
+import asyncio
+from sys import argv
+from atlas.api import Admin, Appservices
 
-logger = logging.getLogger(__name__)
-handler = logging.StreamHandler(sys.stdout)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+async def main():
+    public_key = argv[1]
+    private_key = argv[2]
+    project_id = argv[3]
 
-privkey_res, privkey_out = get_parameter_by_path(path=f"{AWS_SSM_PREFIX}private-key", aws_profile=AWS_PROFILE)
-pubkey_res, pubkey_out = get_parameter_by_path(path=f"{AWS_SSM_PREFIX}public-key", aws_profile=AWS_PROFILE)
+    if not public_key or not private_key or not project_id:
+        print("Usage: python test.py <public_key> <private_key> <project_id>")
+        exit(1)
 
-if not privkey_res or not pubkey_res:
-    print(f"Error getting AWS parameter store information")
-    exit(1)
-else:
-    mdb_private_key = privkey_out
-    mdb_public_key = pubkey_out
+    atlas_admin = Admin(
+            public_key=public_key,
+            private_key=private_key,
+            project_id=project_id
+    )
 
-# Create cloud provider access role
-res_access_role, output_access_role = create_cloud_provider_access_role(
-    mdb_public_key=mdb_public_key,
-    mdb_private_key=mdb_private_key,
-    project_id=MONGO_ATLAS_PROJECT_ID,
-)
+    atlas_appservices = Appservices(
+            public_key=public_key,
+            private_key=private_key,
+            project_id=project_id
+    )
 
-if not res_access_role:
-    logger.error(f"Error creating cloud provider access role: {output_access_role}")
-    exit(1)
-else:
-    logger.info(f"Cloud provider access role created: {output_access_role}")
-    external_id = output_access_role["external_id"]
-    atlas_account_arn = output_access_role["atlas_account_arn"]
+    services = {
+        'infra-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
+        'identity-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'identity-prod-mongo01', 'cluster_name': 'identity-prod-mongo01' },
+        'prod-dwh': { 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
+    }
 
-    aws_iam_role_trust_policy = {
-        "Version":"2012-10-17",
-        "Statement":[
-            {
-                "Effect":"Allow",
-                "Principal":{
-                    "AWS": atlas_account_arn
+    # Each function name must match a trigger name
+    functions = {
+        'customer': { 'type': 'database', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
+        'invoice': { 'type': 'database', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'tenant': { 'type': 'database', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'shop': { 'type': 'database', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
+        'service_objects': { 'type': 'database', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
+
+        'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
+        'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'tenant-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
+        'shop-to-s3': { 'type': 'scheduled', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
+        'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
+    }
+
+    # Each function name must match a trigger name
+    triggers = {
+        'customer': { 'type': 'DATABASE', 'name': 'customer', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'customers', 'collection': 'Customer', 'service': 'infra-prod-mongo01' },
+        'invoice': { 'type': 'DATABASE', 'name': 'invoice', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'invoices', 'collection': 'Invoice', 'service': 'infra-prod-mongo01' },
+        'tenant': { 'type': 'DATABASE', 'name': 'tenant', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'identity', 'collection': 'TenantDashboard', 'service': 'identity-prod-mongo01' },
+        'shop': { 'type': 'DATABASE', 'name': 'shop', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'identity', 'collection': 'ShopDashboard', 'service': 'identity-prod-mongo01' },
+        'service_objects': { 'type': 'DATABASE', 'name': 'service_objects', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'service-objects', 'collection': 'ServiceObject', 'service': 'infra-prod-mongo01' },
+
+        'customer-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'invoice-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'tenant-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'shop-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
+        'service_objects-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
+    }
+
+    federation_databases = [
+        {
+            "name": "prod-dwh",
+            "views": [],
+            "collections": [
+                {
+                    "name": "customers",
+                    "dataSources": [
+                        {
+                            "collection": "customer-updates",
+                            "database": "customers",
+                            "storeName": "prod-infra"
+                        }
+                    ]
                 },
-                "Action":"sts:AssumeRole",
-                "Condition":{
-                    "StringEquals":{
-                    "sts:ExternalId": external_id
-                    }
+                {
+                    "name": "initial-customers",
+                    "dataSources": [
+                        {
+                            "collection": "Customer",
+                            "database": "customers",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-invoices",
+                    "dataSources": [
+                        {
+                            "collection": "Invoice",
+                            "database": "invoices",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-tenants",
+                    "dataSources": [
+                        {
+                            "collection": "TenantDashboard",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-shops",
+                    "dataSources": [
+                        {
+                            "collection": "ShopDashboard",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "invoices",
+                    "dataSources": [
+                        {
+                            "collection": "invoice-updates",
+                            "database": "invoices",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "shops",
+                    "dataSources": [
+                        {
+                            "collection": "shop-updates",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "tenants",
+                    "dataSources": [
+                        {
+                            "collection": "tenant-updates",
+                            "database": "identity",
+                            "storeName": "prod-identity"
+                        }
+                    ]
+                },
+                {
+                    "name": "initial-service-objects",
+                    "dataSources": [
+                        {
+                            "collection": "ServiceObject",
+                            "database": "service-objects",
+                            "storeName": "prod-infra"
+                        }
+                    ]
+                },
+                {
+                    "name": "service-objects",
+                    "dataSources": [
+                        {
+                            "collection": "service-object-updates",
+                            "database": "service-objects",
+                            "storeName": "prod-infra"
+                        }
+                    ]
                 }
+            ],
+        }
+    ]
+
+    federation_stores = [
+        {
+            "clusterName": "infra-prod-mongo01",
+            "name": "prod-infra",
+            "projectId": project_id,
+            "provider": "atlas",
+            "readPreference": {
+                "mode": "secondary"
             }
-        ]
-    }
-
-    aws_iam_role_policy = {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Effect": "Allow",
-                "Action": [
-                    "s3:ListBucket",
-                    "s3:GetObject",
-                    "s3:GetObjectVersion",
-                    "s3:GetBucketLocation",
-                    "s3:PutObject"
-                ],
-                "Resource": [
-                    f"arn:aws:s3:::{AWS_S3_BUCKET_NAME}",
-                    f"arn:aws:s3:::{AWS_S3_BUCKET_NAME}/*"
-                ]
+        },
+        {
+            "clusterName": "identity-prod-mongo01",
+            "name": "prod-identity",
+            "projectId": project_id,
+            "provider": "atlas",
+            "readPreference": {
+                "mode": "secondary"
             }
-        ]
-    }
+        },
+        {
+            "bucket": "s3-steer-dwh-prod",
+            "delimiter": "/",
+            "name": "s3-steer-dwh-prod",
+            "provider": "s3",
+            "region": "us-east-2"
+        }
+    ]
 
-res_create_role, output_create_role = create_iam_role(
-    role_name="mongodb-atlas-dwh",
-    trust_policy=aws_iam_role_trust_policy,
-    aws_profile=AWS_PROFILE,
-    policy=aws_iam_role_policy
-)
+    # Get Cloud Providers
+    res_providers, out_providers = await atlas_admin.get_cloud_provider_access(provider_name='AWS')
+    print(f"Providers: {out_providers}")
+    exit(1) if not res_providers else None
 
-if not res_create_role:
-    logger.error(f"Error creating IAM role: {output_create_role}")
-    exit(1)
-else:
-    logger.info(f"IAM role created: {output_create_role} - {output_access_role}")
-
-logger.info(f"Authorizing IAM role: {output_create_role}")
-res_authorize_role, output_authorize_role = authorize_cloud_provider_access_role(
-    mdb_public_key=mdb_public_key,
-    mdb_private_key=mdb_private_key,
-    project_id=MONGO_ATLAS_PROJECT_ID,
-    role_id=output_access_role["role_id"],
-    role_arn=output_create_role
-)
-
-if not res_authorize_role:
-    logger.error(f"Error authorizing IAM role: {output_authorize_role}")
-    exit(1)
-else:
-    logger.info(f"IAM role authorized: {output_authorize_role}")
-
-# Create S3 bucket
-res_create_bucket, output_create_bucket = create_s3_bucket(
-    bucket_name=AWS_S3_BUCKET_NAME,
-    region=AWS_REGION,
-    role_arn=output_create_role,
-    aws_profile=AWS_PROFILE
-)
-
-if not res_create_bucket:
-    logger.error(f"Error creating S3 bucket: {output_create_bucket}")
-    exit(1)
-else:
-    logger.info(f"S3 bucket created: {output_create_bucket}")
-
-# Create data federation
-res_data_federation, output_data_federation = create_data_federation_s3(
-    name=MONGO_ATLAS_FEDERATION_NAME,
-    database_name=MONGO_ATLAS_FEDERATED_DB_NAME,
-    project_id=MONGO_ATLAS_PROJECT_ID,
-    mdb_public_key=mdb_public_key,
-    mdb_private_key=mdb_private_key,
-    aws_access_role_id=output_access_role["role_id"],
-    aws_bucket_name=AWS_S3_BUCKET_NAME,
-    aws_bucket_prefix="",
-    aws_region=AWS_REGION
-)
-
-if not res_data_federation:
-    logger.error(f"Error creating data federation: {output_data_federation}")
-    exit(1)
-else:
-    logger.info(f"Data federation created: {output_data_federation}")
-
-# Get appservices token
-res, token = get_appservices_token(public_key=mdb_public_key, private_key=mdb_private_key)
-if res:
-    mdb_appservices_token = token
-else:
-    logger.error(f"Error getting appservices token: {token}")
-    exit(1)
-
-# Get triggers app ID
-res, id = get_app_id(token=mdb_appservices_token, project_id=MONGO_ATLAS_PROJECT_ID, name="Triggers")
-if res:
-    mdb_appservices_triggers_app_id = id
-else:
-    # Create triggers app
-    res, app_id = create_app(
-            token=mdb_appservices_token,
-            project_id=MONGO_ATLAS_PROJECT_ID,
-            name="Trigers",
-            federated_db_name=output_data_federation,
+    res_data_federations, out_data_federations = await atlas_admin.create_data_federation(
+        name='prod-dwh',
+        databases=federation_databases,
+        stores=federation_stores,
+        role_id=out_providers[0]['roleId'],
+        test_bucket='s3-steer-dwh-prod'
     )
-    if res:
-        mdb_appservices_triggers_app_id = app_id
-    else:
-        logger.error(f"Error creating app: {app_id}")
-        exit(1)
+    print(f"Data Federations: {out_data_federations}")
+    exit(1) if not res_data_federations else None
 
-exit(0)
-# Link data sources
-#res, output = create_application_datasource_links(
-#    token=mdb_appservices_token,
-#    project_id=MONGO_ATLAS_PROJECT_ID,
-#    name=f"federated-{MONGO_ATLAS_FEDERATION_NAME}",
-#    cluster_name=MONGO_ATLAS_FEDERATION_NAME,
-#    app_id=mdb_appservices_triggers_app_id
-#)
-#if not res:
-#    logger.error(f"Error creating application datasource link: {output}")
-#    exit(1)
-#else:
-#    logger.info(f"Application datasource link created: {output}")
+    # Create App
+    res_app, out_app = await atlas_appservices.create_app(app_name='Triggers', cluster_name='infra-prod-mongo01')
+ 
+    print(f"App: {out_app}")
+    exit(1) if not res_app else None
 
-# Create appservices functions
-for function in functions:
-    if functions[function]["type"] == "DATABASE":
-        source = get_function_source_database(
-            service_name=functions[function]["service_name"],
-            federated_db_name=functions[function]["federated_db_name"],
-            federated_collection_name=functions[function]["federated_collection_name"]
-        )
-    elif functions[function]["type"] == "SCHEDULED":
-        source = get_function_source_scheduled(
-            federation_name=functions[function]["federation_name"],
-            federated_database_name=functions[function]["federated_database_name"],
-            federated_collection_name=functions[function]["federated_collection_name"],
-            s3_bucket_name=AWS_S3_BUCKET_NAME,
-            s3_bucket_region=AWS_REGION
-        )
+    # Create Services
+    async with asyncio.TaskGroup() as tg:
+        services_tasks = {
+            service: tg.create_task(atlas_appservices.create_app_service(app_id=out_app['_id'], name=services[service]['name'], cluster_name=services[service]['cluster_name'], type=services[service]['type']))
+            for service in services
+        }
 
-    res, output = create_function(
-        token=mdb_appservices_token,
-        project_id=MONGO_ATLAS_PROJECT_ID,
-        name=function,
-        app_id=mdb_appservices_triggers_app_id,
-        source=source
-    )
+    for task in services_tasks:
+        res_service, out_service = await services_tasks[task]
+        print(f"Service: {out_service}")
+        exit(1) if not res_service else None
 
-    if not res:
-        logger.error(f"Error creating function {function}: {output}")
-        exit(1)
-    else:
-        logger.info(f"Function {function} created: {output}")
+    res_app_services, out_app_services = await atlas_appservices.get_app_services(app_id=out_app['_id'])
+    print(f"App Services: {out_app_services}")
+    exit(1) if not res_app_services else None
 
-# Create appservices triggers
-for trigger in triggers:
-    if triggers[trigger]["type"] == "DATABASE":
-        res_service, output_service = get_service_id(token=mdb_appservices_token, project_id=MONGO_ATLAS_PROJECT_ID, app_id=mdb_appservices_triggers_app_id, name=triggers[trigger]["source"])
-        if not res_service:
-            logger.error(f"Error getting service ID: {output}")
-            pass
+    # Link Data Sources
+    data_sources = [
+        {'name': services[service]['name'], 'type': services[service]['type'], 'config': {'clusterName': services[service]['cluster_name']}}
+        for service in services
+    ]
 
-    res_function, output_function = get_function_id(
-        token=mdb_appservices_token, project_id=MONGO_ATLAS_PROJECT_ID, app_id=mdb_appservices_triggers_app_id, name=triggers[trigger]["function_name"]
-    )
-    if not res_function:
-        logger.error(f"Error getting function ID: {output_function}")
-        pass
+    res_link_serivces, out_link_services = await atlas_appservices.create_app_service_link(app_id=out_app['_id'], data_sources=data_sources)
+    print(f"Link Services: {out_link_services}")
+    exit(1) if not res_link_serivces else None
 
-    logger.info(f"Creating trigger {trigger}. function_id: {output_function}, service_id: {output_service}")
+    # Create Functions
+    async with asyncio.TaskGroup() as tg:
+        tasks_functions = {
+            function: tg.create_task(
+                atlas_appservices.create_app_function(app_id=out_app['_id'], name=function, source=open('functions/' + functions[function]['type'] + '-' + functions[function]['name'] + '.js').read())
+            )
+            for function in functions
+        }
+    for task in tasks_functions:
+        res_function, out_function = await tasks_functions[task]
+        print(f"Function [{task}]: {out_function}")
+        exit(1) if not res_function else None
 
-    if triggers[trigger]["type"] == "DATABASE":
-        res_trigger, output_trigger = create_trigger(token=mdb_appservices_token,
-                        project_id=MONGO_ATLAS_PROJECT_ID,
-                        app_id=mdb_appservices_triggers_app_id,
-                        name=triggers[trigger]["name"],
-                        database=triggers[trigger]["database"],
-                        collection=triggers[trigger]["collection"],
-                        service_id=output_service,
-                        function_id=output_function,
-                        trigger_type="DATABASE",
-                        op_types=triggers[trigger]["op_types"],
-        )
-    elif triggers[trigger]["type"] == "SCHEDULED":
-        res_trigger, output_trigger = create_trigger(token=mdb_appservices_token,
-                        project_id=MONGO_ATLAS_PROJECT_ID,
-                        app_id=mdb_appservices_triggers_app_id,
-                        name=triggers[trigger]["name"],
-                        function_id=output_function,
-                        trigger_type="SCHEDULED",
-                        schedule=triggers[trigger]["schedule"],
-        )
+    # Create Triggers
+    async with asyncio.TaskGroup() as tg:
+        tasks_triggers_database = {
+            trigger: tg.create_task(atlas_appservices.create_app_trigger(
+                trigger_name=trigger,
+                app_id=out_app['_id'],
+                operations=triggers[trigger]['operations'],
+                database=triggers[trigger]['database'],
+                collection=triggers[trigger]['collection'],
+                service_id=services_tasks[triggers[trigger]['service']].result()[1]['_id'],
+                function_id=tasks_functions[trigger].result()[1]['_id'],
+                type=triggers[trigger]['type']
+            ))
+            for trigger in triggers if triggers[trigger]['type'] == 'DATABASE'
+        }
+        tasks_triggers_scheduled = {
+                trigger: tg.create_task(atlas_appservices.create_app_trigger(
+                    trigger_name=trigger,
+                    app_id=out_app['_id'],
+                    schedule=triggers[trigger]['schedule'],
+                    function_id=tasks_functions[trigger].result()[1]['_id'],
+                    type=triggers[trigger]['type']
+                ))
+                for trigger in triggers if triggers[trigger]['type'] == 'SCHEDULED'
+        }
+        tasks = {**tasks_triggers_database, **tasks_triggers_scheduled}
+    for task in tasks:
+        res_trigger, out_trigger = await tasks[task]
+        print(f"Trigger [{task}]: {out_trigger}")
+        exit(1) if not res_trigger else None
 
-    if not res_trigger:
-        logger.error(f"Error creating trigger '{trigger}': {output_trigger}")
-    else:
-        logger.info(f"Created trigger '{trigger}': {output_trigger}")
+if __name__ == '__main__':
+    asyncio.run(main())
