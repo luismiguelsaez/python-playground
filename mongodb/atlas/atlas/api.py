@@ -1,9 +1,11 @@
 import httpx
+from json import loads
 
 # https://www.mongodb.com/docs/atlas/reference/api-resources-spec/v2
 class Admin():
     __api_endpoint = 'https://cloud.mongodb.com'
     __api_base_path = '/api/atlas/v2'
+    __api_timeout = 30
     __api_headers = {
         'Accept': 'application/vnd.atlas.2024-08-05+json',
         'Content-type': 'application/vnd.atlas.2024-08-05+json'
@@ -22,9 +24,14 @@ class Admin():
                 url=f'{self.__api_endpoint}{self.__api_base_path}/{path}',
                 auth=httpx.DigestAuth(self.__public_key, self.__private_key),
                 headers=self.__api_headers,
-                json=json
+                json=json,
+                timeout=self.__api_timeout,
             )
         if r.status_code == expected_status:
+            try:
+                loads(r.text)
+            except ValueError:
+                return True, { 'code': r.status_code, 'message': r.text }
             return True, r.json()
         else:
             return False, { 'code': r.status_code, 'message': r.text }
@@ -87,10 +94,7 @@ class Admin():
 class Appservices():
     __api_appservices_endpoint = 'https://services.cloud.mongodb.com'
     __api_appservices_base_path = '/api/admin/v3.0'
-    __api_appservices_headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json"
-    }
+    __api_appservices_timeout = 30
 
     def __init__(self, public_key: str, private_key: str, project_id: str):
         self.__public_key = public_key
@@ -109,9 +113,13 @@ class Appservices():
                     'Authorization': f'Bearer {self.__appservices_token}'
                 },
                 json=json,
-                timeout=15
+                timeout=self.__api_appservices_timeout,
             )
         if r.status_code == expected_status:
+            try:
+                loads(r.text)
+            except ValueError:
+                return True, { 'code': r.status_code, 'message': r.text }
             return True, r.json()
         else:
             return False, { 'code': r.status_code, 'message': r.text }
@@ -228,23 +236,44 @@ class Appservices():
             expected_status=201
         )
 
-    async def create_app_function(self, app_id: str, name: str, source: str) -> tuple[bool, dict]:
+    async def create_app_function(self, app_id: str, name: str, source: str, recreate: bool = False) -> tuple[bool, dict]:
         await self.get_appservices_token()
+        exists = False
+        function_id = None
         res_functions, out_functions =  await self.get_app_functions(app_id=app_id)
         filter_functions = list(filter(lambda x: x['name'] == name, out_functions))
         if res_functions and len(filter_functions) > 0:
-            return True, filter_functions[0]
-        return await self.__request(
-            f'groups/{self.__project_id}/apps/{app_id}/functions',
-            method='POST',
-            json={
-                'name': name,
-                'source': source,
-                'private': True,
-                'run_as_system': True
-            },
-            expected_status=201
-        )
+            exists = True
+            function_id = filter_functions[0]['_id']
+            #return True, filter_functions[0]
+        if not exists:
+            return await self.__request(
+                f'groups/{self.__project_id}/apps/{app_id}/functions',
+                method='POST',
+                json={
+                    'name': name,
+                    'source': source,
+                    'private': True,
+                    'run_as_system': True
+                },
+                expected_status=201
+            )
+        else:
+            # Update disabled as it doesn't return JSON and breaks the expected format
+            res, out = await self.__request(
+                f'groups/{self.__project_id}/apps/{app_id}/functions/{function_id}',
+                method='PUT',
+                json={
+                    'name': name,
+                    'source': source,
+                    'private': True,
+                    'run_as_system': True
+                },
+                expected_status=204
+            )
+            if res:
+                out['_id'] = function_id
+            return res, out
 
     async def create_app_trigger(
             self,

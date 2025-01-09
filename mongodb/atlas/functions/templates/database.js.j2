@@ -1,3 +1,4 @@
+// Database Trigger function template
 exports = async function(changeEvent) {
   // Check if changeEvent is undefined
   if (!changeEvent || changeEvent["$undefined"]) {
@@ -9,9 +10,9 @@ exports = async function(changeEvent) {
   const docId = changeEvent.documentKey._id;
 
   // Specify your service name (your MongoDB cluster)
-  const serviceName = "infra-prod-mongo01"; 
-  const federatedDbName = "service-objects";
-  const federatedCollectionName = "service-object-updates";
+  const serviceName = "{{cluster}}";
+  const federatedDbName = "{{database}}";
+  const federatedCollectionName = "{{collection}}";
 
   // Log service and database details
   console.log(`Connecting to service: ${serviceName}`);

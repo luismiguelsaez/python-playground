@@ -1,7 +1,8 @@
+// Scheduled initial Trigger function template
 exports = async function () {
-   const service = context.services.get("prod-dwh");
-   const db = service.db("prod-dwh");
-   const shops = db.collection("initial-shops");
+   const service = context.services.get("{{cluster}}");
+   const db = service.db("{{database}}");
+   const {{collection | replace('-', '')}} = db.collection("initial-{{collection}}");
 
 
    console.log("Starting export");
@@ -9,12 +10,12 @@ exports = async function () {
      {
          '$out': {
             's3': {
-               'bucket': 's3-steer-dwh-prod',
-               'region': 'us-east-2',
-               'filename': 'shops/initial/shops',
+               'bucket': '{{s3_bucket}}',
+               'region': '{{s3_region}}',
+               'filename': '{{s3_prefix}}',
                'format': {
                   'name': 'json',
-                  'maxFileSize': '100GB'
+                  'maxFileSize': '10GB'
                 }
             }
          }
@@ -23,9 +24,9 @@ exports = async function () {
 
    try {
       console.log("Executing aggregation pipeline...");
-      const result = await shops.aggregate(pipeline).toArray();
+      const result = await {{collection | replace('-', '')}}.aggregate(pipeline).toArray();
       console.log("Aggregation completed successfully:");
-     
+
    } catch (err) {
       console.error("Error during aggregation:", err.message);
    }

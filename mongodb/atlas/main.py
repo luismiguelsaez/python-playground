@@ -1,6 +1,8 @@
 import asyncio
 from sys import argv
 from atlas.api import Admin, Appservices
+from jinja2 import Template
+from config.prod.boston import federation_stores, federation_databases, services, functions, triggers
 
 async def main():
     public_key = argv[1]
@@ -22,191 +24,6 @@ async def main():
             private_key=private_key,
             project_id=project_id
     )
-
-    services = {
-        'infra-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
-        'identity-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'identity-prod-mongo01', 'cluster_name': 'identity-prod-mongo01' },
-        'prod-dwh': { 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
-    }
-
-    # Each function name must match a trigger name
-    functions = {
-        'customer': { 'type': 'database', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
-        'invoice': { 'type': 'database', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
-        'tenant': { 'type': 'database', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
-        'shop': { 'type': 'database', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
-        'service_objects': { 'type': 'database', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
-
-        'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
-        'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
-        'tenant-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
-        'shop-to-s3': { 'type': 'scheduled', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
-        'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
-
-        'initial-customer': { 'type': 'scheduled', 'name': 'customer', 'source': 'exports = function() { return "hello world!"; }' },
-        'initial-invoice': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
-        'initial-tenant': { 'type': 'scheduled', 'name': 'invoice', 'source': 'exports = function() { return "hello world!"; }' },
-        'initial-shop': { 'type': 'scheduled', 'name': 'shop', 'source': 'exports = function() { return "hello world!"; }' },
-        'initial-service_objects': { 'type': 'scheduled', 'name': 'service_objects', 'source': 'exports = function() { return "hello world!"; }' },
-    }
-
-    # Each function name must match a trigger name
-    triggers = {
-        'customer': { 'type': 'DATABASE', 'name': 'customer', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'customers', 'collection': 'Customer', 'service': 'infra-prod-mongo01' },
-        'invoice': { 'type': 'DATABASE', 'name': 'invoice', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'invoices', 'collection': 'Invoice', 'service': 'infra-prod-mongo01' },
-        'tenant': { 'type': 'DATABASE', 'name': 'tenant', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'identity', 'collection': 'TenantDashboard', 'service': 'identity-prod-mongo01' },
-        'shop': { 'type': 'DATABASE', 'name': 'shop', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'identity', 'collection': 'ShopDashboard', 'service': 'identity-prod-mongo01' },
-        'service_objects': { 'type': 'DATABASE', 'name': 'service_objects', 'operations': ["INSERT", "UPDATE", "DELETE", "REPLACE"], 'database': 'service-objects', 'collection': 'ServiceObject', 'service': 'infra-prod-mongo01' },
-
-        'customer-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'invoice-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'tenant-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'shop-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'service_objects-to-s3': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
-
-        'initial-customer': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'initial-invoice': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'initial-tenant': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'initial-shop': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'identity-prod-mongo01', 'schedule': '0 */1 * * *' },
-        'initial-service_objects': { 'type': 'SCHEDULED', 'name': 'customer', 'service': 'infra-prod-mongo01', 'schedule': '0 */1 * * *' },
-    }
-
-    federation_databases = [
-        {
-            "name": "prod-dwh",
-            "views": [],
-            "collections": [
-                {
-                    "name": "customers",
-                    "dataSources": [
-                        {
-                            "collection": "customer-updates",
-                            "database": "customers",
-                            "storeName": "prod-infra"
-                        }
-                    ]
-                },
-                {
-                    "name": "initial-customers",
-                    "dataSources": [
-                        {
-                            "collection": "Customer",
-                            "database": "customers",
-                            "storeName": "prod-infra"
-                        }
-                    ]
-                },
-                {
-                    "name": "initial-invoices",
-                    "dataSources": [
-                        {
-                            "collection": "Invoice",
-                            "database": "invoices",
-                            "storeName": "prod-infra"
-                        }
-                    ]
-                },
-                {
-                    "name": "initial-tenants",
-                    "dataSources": [
-                        {
-                            "collection": "TenantDashboard",
-                            "database": "identity",
-                            "storeName": "prod-identity"
-                        }
-                    ]
-                },
-                {
-                    "name": "initial-shops",
-                    "dataSources": [
-                        {
-                            "collection": "ShopDashboard",
-                            "database": "identity",
-                            "storeName": "prod-identity"
-                        }
-                    ]
-                },
-                {
-                    "name": "invoices",
-                    "dataSources": [
-                        {
-                            "collection": "invoice-updates",
-                            "database": "invoices",
-                            "storeName": "prod-infra"
-                        }
-                    ]
-                },
-                {
-                    "name": "shops",
-                    "dataSources": [
-                        {
-                            "collection": "shop-updates",
-                            "database": "identity",
-                            "storeName": "prod-identity"
-                        }
-                    ]
-                },
-                {
-                    "name": "tenants",
-                    "dataSources": [
-                        {
-                            "collection": "tenant-updates",
-                            "database": "identity",
-                            "storeName": "prod-identity"
-                        }
-                    ]
-                },
-                {
-                    "name": "initial-service-objects",
-                    "dataSources": [
-                        {
-                            "collection": "ServiceObject",
-                            "database": "service-objects",
-                            "storeName": "prod-infra"
-                        }
-                    ]
-                },
-                {
-                    "name": "service-objects",
-                    "dataSources": [
-                        {
-                            "collection": "service-object-updates",
-                            "database": "service-objects",
-                            "storeName": "prod-infra"
-                        }
-                    ]
-                }
-            ],
-        }
-    ]
-
-    federation_stores = [
-        {
-            "clusterName": "infra-prod-mongo01",
-            "name": "prod-infra",
-            "projectId": project_id,
-            "provider": "atlas",
-            "readPreference": {
-                "mode": "secondary"
-            }
-        },
-        {
-            "clusterName": "identity-prod-mongo01",
-            "name": "prod-identity",
-            "projectId": project_id,
-            "provider": "atlas",
-            "readPreference": {
-                "mode": "secondary"
-            }
-        },
-        {
-            "bucket": "s3-steer-dwh-prod",
-            "delimiter": "/",
-            "name": "s3-steer-dwh-prod",
-            "provider": "s3",
-            "region": "us-east-2"
-        }
-    ]
 
     # Get Cloud Providers
     res_providers, out_providers = await atlas_admin.get_cloud_provider_access(provider_name='AWS')
@@ -259,7 +76,19 @@ async def main():
     async with asyncio.TaskGroup() as tg:
         tasks_functions = {
             function: tg.create_task(
-                atlas_appservices.create_app_function(app_id=out_app['_id'], name=function, source=open('functions/' + functions[function]['type'] + '-' + functions[function]['name'] + '.js').read())
+                atlas_appservices.create_app_function(
+                    app_id=out_app['_id'],
+                    name=function,
+                    source=Template(open('functions/templates/' + functions[function]['template']).read()).render(
+                        cluster=functions[function]['cluster'],
+                        database=functions[function]['database'],
+                        collection=functions[function]['collection'],
+                        s3_bucket=functions[function]['s3_bucket'] if functions[function]['type'] == 'scheduled' else None,
+                        s3_prefix=functions[function]['s3_prefix'] if functions[function]['type'] == 'scheduled' else None,
+                        s3_region=functions[function]['s3_region'] if functions[function]['type'] == 'scheduled' else None
+                    ),
+                )
+                    #source=open('functions/boston' + functions[function]['type'] + '-' + functions[function]['name'] + '.js').read())
             )
             for function in functions
         }

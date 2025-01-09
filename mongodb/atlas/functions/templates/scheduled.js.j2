@@ -1,7 +1,8 @@
+// Scheduled Trigger function template
 exports = async function () {
-   const service = context.services.get("prod-dwh");
-   const db = service.db("prod-dwh");
-   const tenants = db.collection("tenants");
+   const service = context.services.get("{{cluster}}");
+   const db = service.db("{{database}}");
+   const {{collection | replace('-', '')}} = db.collection("{{collection}}");
    const now = new Date();
    const datePart = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}-${now.getFullYear()}`;
    const hourPart = `${now.getHours().toString().padStart(2, '0')}-${now.getMinutes().toString().padStart(2, '0')}`;
@@ -20,9 +21,9 @@ exports = async function () {
       {
          '$out': {
             's3': {
-               'bucket': 's3-steer-dwh-prod',
-               'region': 'us-east-2',
-               'filename': `tenants/${datePart}/${hourPart}`,
+              'bucket': '{{s3_bucket}}',
+              'region': '{{s3_region}}',
+               'filename': `{{s3_prefix}}/${datePart}/${hourPart}`,
                'format': {
                   'name': 'json',
                   'maxFileSize': '1GB'
@@ -34,7 +35,7 @@ exports = async function () {
 
    try {
       console.log("Executing aggregation pipeline...");
-      const result = await tenants.aggregate(pipeline).toArray();
+      const result = await {{collection | replace('-', '')}}.aggregate(pipeline).toArray();
       console.log("Aggregation completed successfully");
      
    } catch (err) {
