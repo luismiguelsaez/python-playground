@@ -2,15 +2,23 @@ import asyncio
 from sys import argv
 from atlas.api import Admin, Appservices
 from jinja2 import Template
-from config.prod.boston import federation_stores, federation_databases, services, functions, triggers
 
 async def main():
-    public_key = argv[1]
-    private_key = argv[2]
-    project_id = argv[3]
+    env = argv[1]
+    public_key = argv[2]
+    private_key = argv[3]
+    project_id = argv[4]
+
+    if env == 'boston':
+        from config.prod.boston import federation_stores, federation_databases, services, functions, triggers, app_initial_cluster_name
+    elif env == 'houston':
+        from config.prod.houston import federation_stores, federation_databases, services, functions, triggers, app_initial_cluster_name
+    else:
+        print("Usage: python test.py <environment> <public_key> <private_key> <project_id>")
+        exit(1)
 
     if not public_key or not private_key or not project_id:
-        print("Usage: python test.py <public_key> <private_key> <project_id>")
+        print("Usage: python test.py <environment> <public_key> <private_key> <project_id>")
         exit(1)
 
     atlas_admin = Admin(
@@ -24,6 +32,9 @@ async def main():
             private_key=private_key,
             project_id=project_id
     )
+
+    # Create IAM role and associate it with the access role in the project
+    # - Trust policy includes Atlas AWS account ARN and ExternalId
 
     # Get Cloud Providers
     res_providers, out_providers = await atlas_admin.get_cloud_provider_access(provider_name='AWS')
@@ -41,7 +52,7 @@ async def main():
     exit(1) if not res_data_federations else None
 
     # Create App
-    res_app, out_app = await atlas_appservices.create_app(app_name='Triggers', cluster_name='infra-prod-mongo01')
+    res_app, out_app = await atlas_appservices.create_app(app_name='Triggers', cluster_name=app_initial_cluster_name)
  
     print(f"App: {out_app}")
     exit(1) if not res_app else None
@@ -88,7 +99,6 @@ async def main():
                         s3_region=functions[function]['s3_region'] if functions[function]['type'] == 'scheduled' else None
                     ),
                 )
-                    #source=open('functions/boston' + functions[function]['type'] + '-' + functions[function]['name'] + '.js').read())
             )
             for function in functions
         }

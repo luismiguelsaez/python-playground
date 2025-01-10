@@ -64,8 +64,12 @@ class Admin():
     async def create_data_federation(self, name: str, databases: list[dict], stores: list[dict], role_id: str, cloud_provider: str = 'AWS', test_bucket: str = '') -> tuple[bool, dict]:
         res_federations, out_federations =  await self.get_data_federations()
         filter_federations = list(filter(lambda x: x['name'] == name, out_federations))
+        exists = False
+        federation_name = None
         if res_federations and len(filter_federations) > 0:
-            return True, filter_federations[0]
+            exists = True
+            federation_name = filter_federations[0]['name']
+            #return True, filter_federations[0]
         if cloud_provider not in ['AWS']:
             return False, { 'message': 'Invalid or not implemented cloud provider' }
         cloud_provider_config = {}
@@ -76,19 +80,35 @@ class Admin():
                     'testS3Bucket': test_bucket
                 }
             }
-        return await self.__request(
-            f'groups/{self.__project_id}/dataFederation',
-            method='POST',
-            json={
-                'name': name,
-                'cloudProviderConfig': cloud_provider_config,
-                'storage': {
-                    'databases': databases,
-                    'stores': stores
+        if not exists:
+            return await self.__request(
+                f'groups/{self.__project_id}/dataFederation',
+                method='POST',
+                json={
+                    'name': name,
+                    'cloudProviderConfig': cloud_provider_config,
+                    'storage': {
+                        'databases': databases,
+                        'stores': stores
+                    },
                 },
-            },
-            expected_status=200
-        )
+                expected_status=200
+            )
+        else:
+            res, out = await self.__request(
+                f'groups/{self.__project_id}/dataFederation/{federation_name}',
+                method='PATCH',
+                json={
+                    'name': name,
+                    'cloudProviderConfig': cloud_provider_config,
+                    'storage': {
+                        'databases': databases,
+                        'stores': stores
+                    },
+                },
+                expected_status=200
+            )
+            return res, out
 
 # https://www.mongodb.com/docs/atlas/app-services/admin/api/v3
 class Appservices():

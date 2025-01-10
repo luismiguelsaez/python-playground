@@ -1,5 +1,7 @@
+app_initial_cluster_name = "infra-houston-mongo01"
+
 services = {
-    'infra-houston-mongo01': { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
+    'infra-houston-mongo01': { 'type': 'mongodb-atlas', 'name': 'infra-houston-mongo01', 'cluster_name': 'infra-houston-mongo01' },
     'prod-dwh': { 'type': 'datalake', 'name': 'prod-dwh', 'cluster_name': 'prod-dwh' },
 }
 
@@ -9,13 +11,13 @@ functions = {
     'invoice': { 'type': 'database', 'name': 'invoice', 'cluster': 'infra-houston-mongo01', 'database': 'invoices', 'collection': 'invoice-updates', 'template': 'database.js.j2'},
     'service_objects': { 'type': 'database', 'name': 'service_objects', 'cluster': 'infra-houston-mongo01', 'database': 'service-objects', 'collection': 'service-object-updates', 'template': 'database.js.j2'},
 
-    'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'houston/customers', 's3_region': 'us-east-2' },
-    'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'houston/invoices', 's3_region': 'us-east-2' },
-    'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'houston/service-objects', 's3_region': 'us-east-2' },
+    'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'customers-houston', 's3_region': 'us-east-2' },
+    'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'invoices-houston', 's3_region': 'us-east-2' },
+    'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'service-objects-houston', 's3_region': 'us-east-2' },
 
-    'initial-customer': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'houston/customers/initial/customers', 's3_region': 'us-east-2' },
-    'initial-invoice': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'houston/invoices/initial/invoices', 's3_region': 'us-east-2' },
-    'initial-service_objects': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'houston/service-objects/initial/service-objects', 's3_region': 'us-east-2' },
+    'initial-customer': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'customers-houston/initial/customers', 's3_region': 'us-east-2' },
+    'initial-invoice': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'invoices-houston/initial/invoices', 's3_region': 'us-east-2' },
+    'initial-service_objects': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'service-objects-houston/initial/service-objects', 's3_region': 'us-east-2' },
 }
 
 # Each function name must match a trigger name
@@ -104,17 +106,8 @@ federation_databases = [
 
 federation_stores = [
     {
-        "clusterName": "infra-prod-mongo01",
+        "clusterName": "infra-houston-mongo01",
         "name": "prod-infra",
-        "projectId": "63c12ecedba0586924108b68",
-        "provider": "atlas",
-        "readPreference": {
-            "mode": "secondary"
-        }
-    },
-    {
-        "clusterName": "identity-prod-mongo01",
-        "name": "prod-identity",
         "projectId": "63c12ecedba0586924108b68",
         "provider": "atlas",
         "readPreference": {

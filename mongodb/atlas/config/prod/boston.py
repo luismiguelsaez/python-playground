@@ -1,3 +1,5 @@
+app_initial_cluster_name = "infra-houston-mongo01"
+
 services = {
     'infra-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'infra-prod-mongo01', 'cluster_name': 'infra-prod-mongo01' },
     'identity-prod-mongo01': { 'type': 'mongodb-atlas', 'name': 'identity-prod-mongo01', 'cluster_name': 'identity-prod-mongo01' },
@@ -12,17 +14,17 @@ functions = {
     'shop': { 'type': 'database', 'name': 'shop', 'cluster': 'identity-prod-mongo01', 'database': 'identity', 'collection': 'shop-updates', 'template': 'database.js.j2'},
     'service_objects': { 'type': 'database', 'name': 'service_objects', 'cluster': 'infra-prod-mongo01', 'database': 'service-objects', 'collection': 'service-object-updates', 'template': 'database.js.j2'},
 
-    'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/customers', 's3_region': 'us-east-2' },
-    'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/invoices', 's3_region': 'us-east-2' },
-    'tenant-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'tenants', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/tenants', 's3_region': 'us-east-2' },
-    'shop-to-s3': { 'type': 'scheduled', 'name': 'shop', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'shops', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/shops', 's3_region': 'us-east-2' },
-    'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/service-objects', 's3_region': 'us-east-2' },
+    'customer-to-s3': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'customers-boston', 's3_region': 'us-east-2' },
+    'invoice-to-s3': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'invoices-boston', 's3_region': 'us-east-2' },
+    'tenant-to-s3': { 'type': 'scheduled', 'name': 'tenant', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'tenants', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'tenants-boston', 's3_region': 'us-east-2' },
+    'shop-to-s3': { 'type': 'scheduled', 'name': 'shop', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'shops', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'shops-boston', 's3_region': 'us-east-2' },
+    'service_objects-to-s3': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'service-objects-boston', 's3_region': 'us-east-2' },
 
-    'initial-customer': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/customers/initial/customers', 's3_region': 'us-east-2' },
-    'initial-invoice': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/invoices/initial/invoices', 's3_region': 'us-east-2' },
-    'initial-tenant': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'tenants', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/tenants/initial/tenants', 's3_region': 'us-east-2' },
-    'initial-shop': { 'type': 'scheduled', 'name': 'shop', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'shops', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/shops/initial/shops', 's3_region': 'us-east-2' },
-    'initial-service_objects': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'boston/service-objects/initial/service-objects', 's3_region': 'us-east-2' },
+    'initial-customer': { 'type': 'scheduled', 'name': 'customer', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'customers', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'customers-boston/initial/customers', 's3_region': 'us-east-2' },
+    'initial-invoice': { 'type': 'scheduled', 'name': 'invoice', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'invoices', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'invoices-boston/initial/invoices', 's3_region': 'us-east-2' },
+    'initial-tenant': { 'type': 'scheduled', 'name': 'tenant', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'tenants', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'tenants-boston/initial/tenants', 's3_region': 'us-east-2' },
+    'initial-shop': { 'type': 'scheduled', 'name': 'shop', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'shops', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'shops-boston/initial/shops', 's3_region': 'us-east-2' },
+    'initial-service_objects': { 'type': 'scheduled', 'name': 'service_objects', 'cluster': 'prod-dwh', 'database': 'prod-dwh', 'collection': 'service-objects', 'template': 'scheduled-initial.js.j2', 's3_bucket': 's3-steer-dwh-prod', 's3_prefix': 'service-objects-boston/initial/service-objects', 's3_region': 'us-east-2' },
 }
 
 # Each function name must match a trigger name
